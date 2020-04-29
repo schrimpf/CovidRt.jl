@@ -79,9 +79,9 @@ will tend to decrease with $L$ regardless of $C^\ast(t)$.
 
 ```julia; echo=false
 # data prep
-using TransformVariables, Parameters, CovidSEIR, Plots,  StatsPlots, DataFrames, Dates, LinearAlgebra, Distributions, Random, LogDensityProblems, DynamicHMC, MCMCChains, JLD2
+using CovidData, CovidRt
+using TransformVariables, Parameters, Plots,  StatsPlots, DataFrames, Dates, LinearAlgebra, Distributions, Random, LogDensityProblems, DynamicHMC, MCMCChains, JLD2
 Plots.pyplot()
-include("jmd/rtmod.jl")
 df = CovidData.statedata()
 df = filter(x->x.fips<60, df)
 
@@ -125,22 +125,12 @@ for p in pvars
 end
 sdf = sort(sdf, [:state, :date])
 
-function vecdiff(x::AbstractVector, d=1)
-  if d>0
-    dx = vcat(fill(missing, d), x[(d+1):end] .- x[1:(end-d)])
-  elseif d<0
-    dx = vcat(-x[(d+1):end] .+ x[1:(end-d)], fill(missing,d))
-  else
-    dx = copy(x)
-  end
-  return(dx)
-end
 
 sdf = sort(sdf, (:state, :date))
 lag = 7
-sdf[!,:newcases] = by(sdf, :state, newcases = Symbol("cases.nyt") => x->vecdiff(x, lag))[!,:newcases]
+sdf[!,:newcases] = by(sdf, :state, newcases = Symbol("cases.nyt") => x->lagdiff(x, lag))[!,:newcases]
 #sdf[!,:sc] = by(sdf, :state, sc = :newcases => x->smoother(x, w=pdf.(Normal(0,2), -3:3)))[!,:sc]
-sdf[!,:dlogk] = by(sdf, :state, dlogk = :newcases => x->vecdiff(log.(max.(x,0.1)), 1))[!,:dlogk]
+sdf[!,:dlogk] = by(sdf, :state, dlogk = :newcases => x->lagdiff(log.(max.(x,0.1)), 1))[!,:dlogk]
 
 sdf = sort(sdf, (:state, :date));
 sdf[!,mvars] ./= 100
@@ -193,7 +183,7 @@ priors = (γ = truncated(Normal(1/7,1/7), 1/28, 1/1),
           ρ = Uniform(rlo, rhi),
           α = MvNormal(zeros(K), sqrt(10))
           )
-mdl = RT.RtRW(dlogk, X, X0, priors);
+mdl = CovidRt.RtModel(dlogk, X, X0, priors);
 trans = as( (γ = asℝ₊, σR0 = asℝ₊, α0 = as(Array, length(X0[1])),
              σR = asℝ₊, σk = asℝ₊, ρ=as(Real, rlo, rhi),
              α = as(Array, K)) )
@@ -239,7 +229,7 @@ S = length(states_to_plot)
 figs = fill(plot(), S)
 for (i,st) in enumerate(states_to_plot)
   s = findfirst(states.==st)
-  figr = RT.plotpostr(dates[s],dlogk[s],post, X[s], X0[s])
+  figr = CovidRt.plotpostr(dates[s],dlogk[s],post, X[s], X0[s])
   l = @layout [a{.1h}; grid(1,1)]
   figs[i] = plot(plot(annotation=(0.5,0.5, st), framestyle = :none),
                  plot(figr, ylim=(-1,10)), layout=l)

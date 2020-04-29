@@ -7,11 +7,11 @@ struct RtModel{C,P,V,T, T0}
 end
 
 function RtModel(d::Array{Vector{T}}, p::NamedTuple{P,V}) where {T, P , V}
-  RtRW(d, [ones(length(ds),1) for ds in d],
-       fill(ones(1), length(d)), p, true)
+  RtModel(d, [ones(length(ds),1) for ds in d],
+          fill(ones(1), length(d)), p, true)
 end
 
-RtModel(d, x, x0, p) = RtRW(d,x,x0,p,false)
+RtModel(d, x, x0, p) = RtModel(d,x,x0,p,false)
 
 function (m::RtModel)(param)
   @unpack dlogk, X, X0, priors = m
@@ -50,7 +50,7 @@ end
 
 
 function plotpostr(dates, dlogk, post, X, X0; Δ=1)
-  k = [RT.kalman(dlogk, p.σR, p.σk, p.σR0, dot(X0,p.α0), p.γ, p.ρ, X*p.α) for p in post];
+  k = [kalman(dlogk, p.σR, p.σk, p.σR0, dot(X0,p.α0), p.γ, p.ρ, X*p.α) for p in post];
   γ = [p.γ for p in post];
   Xa = hcat([X*p.α for p in post]...)
   meanR = hcat([x[1] for x in k]...)./Δ;
