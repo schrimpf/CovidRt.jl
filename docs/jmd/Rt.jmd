@@ -145,8 +145,8 @@ try
   using CovidData
 catch
   pkg"registry add https://github.com/schrimpf/julia-registry.git"
-  Pkg.dev("CovidData")
-  Pkg.dev("CovidRt")
+  Pkg.develop("CovidData")
+  Pkg.develop("CovidRt")
 end
 using DataFrames, Plots, StatsPlots, CovidRt, CovidData
 Plots.pyplot()

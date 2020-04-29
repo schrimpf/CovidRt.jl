@@ -1,4 +1,5 @@
-#using Pkg
+using Pkg
+Pkg.instantiate()
 #Pkg.activate(".")
 using Weave
 
