@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Paul Schrimpf">
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Long-differening - CovidSEIR.jl</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atelier-dune-light.min.css">
+        <link href="../assets/Documenter.css" rel="stylesheet">
+        <link href="../assets/extra.css" rel="stylesheet">
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">CovidSEIR.jl</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href=".." class="nav-link">Package Docs</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Reproductive number estimates <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../Rt/" class="dropdown-item">Systrom Approach</a>
+</li>
+                                    
+<li>
+    <a href="./" class="dropdown-item active">Long-differening</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../license/" class="dropdown-item">License</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../Rt/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../license/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/schrimpf/CovidSEIR.jl/edit/master/docs/rt_longdiff.md" class="nav-link"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="2"><a href="#longer-differences-and-smoothing" class="nav-link">Longer Differences and Smoothing</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#results" class="nav-link">Results</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#another-derivation" class="nav-link">Another Derivation</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#incorporating-death" class="nav-link">Incorporating death</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#time-delays" class="nav-link">Time delays</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h2 id="longer-differences-and-smoothing">Longer Differences and Smoothing<a class="headerlink" href="#longer-differences-and-smoothing" title="Permanent link">&para;</a></h2>
+<p>One way to reduce $\sigma_k/\sigma_R$ is to reduce noise in new cases by
+taking a longer difference or smoothing case counts in some other way.
+How does this affect the estimation and interpretation of $R_t$?</p>
+<p>As in the first section, we start with the approximate recursive
+relation <script type="math/tex; mode=display">
+C(t) - C(t-1) \equiv \Delta C(t) \approx \frac{\tau(t)}{\tau(t-1)} e^{\gamma (R_t - 1)} \Delta C(t-1)
+</script> If we instead look at a longer difference, <script type="math/tex; mode=display">
+\begin{align*}
+C(t) - C(t-L) = & \sum_{i=0}^{L-1} \Delta C_{t-i} \\
+\approx & \sum_{i=0}^{L-1} \frac{\tau(t-i)}{\tau(t-i-1)} e^{\gamma (R_{t-i} - 1)} \Delta C_{t-i-1} \\
+= & \overline {T_{t,L} e^{\gamma(R_{t,L} - 1)}} \sum_{i=0}^{L-1}\Delta C_{t-i-1} \\
+= & \overline {T_{t,L} e^{\gamma(R_{t,L} - 1)}} \left( C(t-1) - C(t-1-L) \right)
+\end{align*}
+</script> where $\overline {T_{t,L} e^{\gamma(R_{t,L} - 1)}}$ is some
+intermediate value in between the minimum and maximum of the
+${ \frac{\tau(t-i)}{\tau(t-i-1)} e^{\gamma (R_{t-i} - 1)} }_{i=0}^{L-1}$.</p>
+<p>If testing is constant over time, we can then obtain an interpretable
+$\overline{R_{t,L}}$ by using $k_{t,L} =\log(C(t)-C(t-L))$ and following
+the procedure above.</p>
+<p>If testing varies with time, it becomes hard to separate testing rate
+changes from $R_t$ after taking long differnces.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The same analysis can be applied to other smoothing operations, i.e. using
+<script type="math/tex; mode=display">
+\sum_{i=0}^L w_i \Delta C_{t-i}
+</script>
+in place of $C(t) - C(t-L)$. However, there&rsquo;s something strange
+about smoothing $C_t$, and then extracting a smoothed component of
+it using the Kalman filter. The inference afterwards is suspect;
+we would essentially be estimating a kernel regression of $C_t$ on
+time, and using the estimated regression as though it&rsquo;s known with
+certainty.</p>
+</div>
+<p>When would long differences reduce variance? Well if
+$\Delta C(t) = \Delta C^\ast(t) + \epsilon_t$ with $\epsilon_t$
+indepenedent over time with mean $0$ and constant variance, then you
+would need $C^\ast(t) - C^\ast(t-L)$ to increase faster than linearly
+with $L$. This is true if $C^\ast$ is growing exponentially.</p>
+<p>Alternatively, if $\epsilon_t$ is not independent over time, but
+negatively correlated (as seems likely), then variance can decrease with
+$L$. For example, if $\Delta C(t) = C^\ast(t) - C^\ast(t-\delta)$ with
+$\delta$ a random, independent increment with mean $1$, then variance
+will tend to decrease with $L$ regardless of $C^\ast(t)$.</p>
+<h2 id="results">Results<a class="headerlink" href="#results" title="Permanent link">&para;</a></h2>
+<p>Here, we will allow the initial and time varying mean of $R_{s,t}$ to
+depend on covariates.</p>
+<p>
+<script type="math/tex; mode=display">
+\begin{align*}
+\tilde{R}_{s,0} & \sim N(X_{0,s} \alpha_0, \sigma^2_{R,0}) \\
+\tilde{R}_{s,t} & = \rho \tilde{R}_{s,t} + u_{s,t} \;,\; u_{s,t} \sim
+N(0, \sigma^2_R) \\
+R_{s,t} & = X_{s,t} \alpha + \tilde{R}_{s,t} \\
+\Delta \log(k)_{s,t} & = \gamma (R_{s,t} - 1) + \epsilon_{s,t} -
+\epsilon_{s,t-1} \;, \; \epsilon_{s,t} \sim N(0, \sigma^2_k)
+\end{align*}
+</script>
+</p>
+<pre><code class="julia">reestimate=false
+rlo=-1 #1 - eps(Float64)
+rhi=1.2 #1+ eps(Float64)
+K = size(X[1],2)
+priors = (γ = truncated(Normal(1/7,1/7), 1/28, 1/1),
+          σR0 = truncated(Normal(1, 3), 0, Inf),
+          α0 = MvNormal(zeros(length(X0[1])), sqrt(10)), #truncated(Normal(1, 3), 0, Inf),
+          σR = truncated(Normal(0.25,1),0,Inf),
+          σk = truncated(Normal(0.1, 5), 0, Inf),
+          ρ = Uniform(rlo, rhi),
+          α = MvNormal(zeros(K), sqrt(10))
+          )
+mdl = CovidRt.RtModel(dlogk, X, X0, priors);
+trans = as( (γ = asℝ₊, σR0 = asℝ₊, α0 = as(Array, length(X0[1])),
+             σR = asℝ₊, σk = asℝ₊, ρ=as(Real, rlo, rhi),
+             α = as(Array, K)) )
+P = TransformedLogDensity(trans, mdl)
+∇P = ADgradient(:ForwardDiff, P)
+
+p0 = (γ = 1/7, σR0=1.0, α0 = zeros(length(X0[1])), σR=0.25, σk=2.0, ρ=1.0, α=zeros(K))
+x0 = inverse(trans,p0)
+@time LogDensityProblems.logdensity_and_gradient(∇P, x0);
+</code></pre>
+
+<pre><code>0.004435 seconds (9.88 k allocations: 3.749 MiB)
+</code></pre>
+<pre><code class="julia">rng = MersenneTwister()
+steps = 100
+warmup=default_warmup_stages(local_optimization=nothing, #FindLocalOptimum(1e-6, 200),
+                             stepsize_search=nothing,
+                             init_steps=steps, middle_steps=steps,
+                             terminating_steps=2*steps,  doubling_stages=4, M=Symmetric)
+x0 = x0
+if !isfile(&quot;rt7.jld2&quot;) || reestimate
+   res = DynamicHMC.mcmc_keep_warmup(rng, ∇P, 2000;initialization = (q = x0, ϵ=0.1),
+                                      reporter = LogProgressReport(nothing, 25, 15),
+                                                                 warmup_stages =warmup);
+   post = transform.(trans,res.inference.chain)
+   @save &quot;rt7.jld2&quot; post
+end
+@load &quot;rt7.jld2&quot; post
+p = post[1]
+vals = hcat([vcat([length(v)==1 ? v : vec(v) for v in values(p)]...) for p in post]...)'
+vals = reshape(vals, size(vals)..., 1)
+names = vcat([length(p[s])==1 ? String(s) : String.(s).*&quot;[&quot;.*string.(1:length(p[s])).*&quot;]&quot; for s in keys(p)]...)
+cc = MCMCChains.Chains(vals, names)
+display(plot(cc))
+</code></pre>
+
+<p><img alt="" src="../figures/rt_longdiff_2_1.png" /></p>
+<pre><code class="julia">display(describe(cc))
+</code></pre>
+
+<pre><code>2-element Array{ChainDataFrame,1}
+
+Summary Statistics
+  parameters     mean     std  naive_se    mcse       ess   r_hat
+  ──────────  ───────  ──────  ────────  ──────  ────────  ──────
+           γ   0.0385  0.0029    0.0001  0.0003  132.3146  1.0065
+         σR0   2.8281  0.5418    0.0121  0.0572  113.0890  0.9995
+       α0[1]   0.5469  2.7217    0.0609  0.2931   99.3642  1.0448
+       α0[2]   0.6933  0.4014    0.0090  0.0341  172.0403  0.9997
+       α0[3]   0.2986  0.6375    0.0143  0.0614  100.0599  1.0063
+       α0[4]  -0.4452  0.3038    0.0068  0.0262  195.2698  0.9996
+       α0[5]   0.2478  0.1095    0.0024  0.0112  121.4844  1.0340
+          σR   0.5091  0.0769    0.0017  0.0059  203.8605  1.0046
+          σk   0.1212  0.0020    0.0000  0.0001  575.1372  1.0058
+           ρ   0.9308  0.0101    0.0002  0.0009  108.8407  1.0004
+        α[1]   1.8508  1.0964    0.0245  0.1086  106.6214  1.0017
+        α[2]  -1.0439  0.3832    0.0086  0.0333  181.0970  0.9995
+        α[3]  -0.4451  0.9071    0.0203  0.1073   61.7527  1.0034
+        α[4]   0.7752  0.5842    0.0131  0.0609   91.7641  0.9995
+        α[5]   0.2955  0.7694    0.0172  0.0654  136.9157  1.0091
+        α[6]  -0.3057  0.8170    0.0183  0.0756  143.7700  1.0035
+        α[7]   0.0815  0.3928    0.0088  0.0321  136.2739  0.9996
+        α[8]  -0.5518  0.3379    0.0076  0.0346   92.6187  1.0033
+        α[9]  -0.6664  0.4015    0.0090  0.0310  245.7335  1.0127
+       α[10]  -0.2082  0.6136    0.0137  0.0507  121.5162  0.9995
+       α[11]  -1.4219  1.8850    0.0421  0.1485  206.8016  0.9997
+       α[12]  -0.1958  1.4144    0.0316  0.1245  152.7571  1.0038
+       α[13]  -0.1600  0.3813    0.0085  0.0218  146.6336  1.0084
+       α[14]   0.3410  1.5600    0.0349  0.1338  124.4893  1.0092
+       α[15]   1.9749  1.6947    0.0379  0.1474  181.0001  1.0073
+       α[16]   5.0880  2.6987    0.0603  0.2208  145.4689  0.9996
+       α[17]   0.1485  1.4156    0.0317  0.0890  239.9660  1.0026
+
+Quantiles
+  parameters     2.5%    25.0%    50.0%    75.0%    97.5%
+  ──────────  ───────  ───────  ───────  ───────  ───────
+           γ   0.0358   0.0365   0.0375   0.0395   0.0465
+         σR0   1.7611   2.4589   2.8184   3.1795   3.8813
+       α0[1]  -4.5531  -1.1945   0.4954   2.3379   6.0640
+       α0[2]  -0.0379   0.4001   0.6598   0.9733   1.5094
+       α0[3]  -0.9143  -0.1588   0.2789   0.7493   1.5129
+       α0[4]  -1.0730  -0.6398  -0.4254  -0.2319   0.0868
+       α0[5]   0.0396   0.1729   0.2473   0.3178   0.4616
+          σR   0.3652   0.4561   0.5064   0.5584   0.6667
+          σk   0.1174   0.1199   0.1212   0.1225   0.1251
+           ρ   0.9104   0.9238   0.9313   0.9380   0.9488
+        α[1]  -0.3918   1.1371   1.9201   2.5812   3.8722
+        α[2]  -1.7949  -1.3077  -1.0467  -0.7776  -0.2947
+        α[3]  -2.1557  -1.0890  -0.4205   0.2087   1.2936
+        α[4]  -0.2497   0.3631   0.7169   1.1773   2.0513
+        α[5]  -1.2141  -0.2233   0.2882   0.8410   1.8069
+        α[6]  -1.7900  -0.8927  -0.2866   0.2147   1.3484
+        α[7]  -0.6582  -0.1937   0.0721   0.3492   0.9073
+        α[8]  -1.1627  -0.7897  -0.5734  -0.3322   0.1783
+        α[9]  -1.4786  -0.9486  -0.6595  -0.3898   0.0897
+       α[10]  -1.3662  -0.6317  -0.2102   0.2032   0.9813
+       α[11]  -5.0388  -2.7623  -1.3920  -0.1483   2.3063
+       α[12]  -3.1257  -1.1466  -0.0938   0.7597   2.4948
+       α[13]  -0.8987  -0.3931  -0.1742   0.0721   0.5773
+       α[14]  -2.5921  -0.7414   0.2329   1.4249   3.5799
+       α[15]  -1.3518   0.8072   1.9783   3.1373   5.3533
+       α[16]  -0.1937   3.2641   5.0329   6.9496  10.4304
+       α[17]  -2.6334  -0.7249   0.1287   1.0962   2.9368
+</code></pre>
+<pre><code class="julia">display([1:length(x0vars)  x0vars])
+</code></pre>
+
+<pre><code>5×2 Array{Any,2}:
+ 1  :constant
+ 2  :logpopdens
+ 3  Symbol("Percent.Unemployed..2018.")
+ 4  Symbol("Percent.living.under.the.federal.poverty.line..2018.")
+ 5  Symbol("Percent.at.risk.for.serious.illness.due.to.COVID")
+</code></pre>
+<pre><code class="julia">display([1:length(xvars) xvars])
+</code></pre>
+
+<pre><code>17×2 Array{Any,2}:
+  1  :constant
+  2  Symbol("Stay.at.home..shelter.in.place")
+  3  Symbol("State.of.emergency")
+  4  Symbol("Date.closed.K.12.schools")
+  5  Symbol("Closed.gyms")
+  6  Symbol("Closed.movie.theaters")
+  7  Symbol("Closed.day.cares")
+  8  Symbol("Date.banned.visitors.to.nursing.homes")
+  9  Symbol("Closed.non.essential.businesses")
+ 10  Symbol("Closed.restaurants.except.take.out")
+ 11  :retail_and_recreation_percent_change_from_baseline
+ 12  :grocery_and_pharmacy_percent_change_from_baseline
+ 13  :parks_percent_change_from_baseline
+ 14  :transit_stations_percent_change_from_baseline
+ 15  :workplaces_percent_change_from_baseline
+ 16  :residential_percent_change_from_baseline
+ 17  :percentchangebusinesses
+</code></pre>
+<pre><code class="julia">states = unique(sdf.state)
+states_to_plot = [&quot;New York&quot;, &quot;New Jersey&quot;,&quot;Massachusetts&quot;,&quot;California&quot;,
+                  &quot;Georgia&quot;,&quot;Illinois&quot;,&quot;Michigan&quot;,
+                  &quot;Ohio&quot;,&quot;Wisconsin&quot;,&quot;Washington&quot;]
+S = length(states_to_plot)
+figs = fill(plot(), S)
+for (i,st) in enumerate(states_to_plot)
+  s = findfirst(states.==st)
+  figr = CovidRt.plotpostr(dates[s],dlogk[s],post, X[s], X0[s])
+  l = @layout [a{.1h}; grid(1,1)]
+  figs[i] = plot(plot(annotation=(0.5,0.5, st), framestyle = :none),
+                 plot(figr, ylim=(-1,10)), layout=l)
+  display(figs[i])
+end
+</code></pre>
+
+<p><img alt="" src="../figures/rt_longdiff_3_1.png" /> <img alt="" src="../figures/rt_longdiff_3_2.png" />
+<img alt="" src="../figures/rt_longdiff_3_3.png" /> <img alt="" src="../figures/rt_longdiff_3_4.png" />
+<img alt="" src="../figures/rt_longdiff_3_5.png" /> <img alt="" src="../figures/rt_longdiff_3_6.png" />
+<img alt="" src="../figures/rt_longdiff_3_7.png" /> <img alt="" src="../figures/rt_longdiff_3_8.png" />
+<img alt="" src="../figures/rt_longdiff_3_9.png" /> <img alt="" src="../figures/rt_longdiff_3_10.png" /></p>
+<h1 id="another-derivation">Another Derivation<a class="headerlink" href="#another-derivation" title="Permanent link">&para;</a></h1>
+<p>An alternative (and easier) way to derive the same estimator will be
+described here. This approach will easily generalize to more complicated
+models, but let’s begin with the simplest SIR model with testing.</p>
+<p>
+<script type="math/tex; mode=display">
+\begin{align*}
+\dot{S} & = -\frac{S}{N} \beta I \\
+\dot{I} & = \frac{S}{N} \beta I - \gamma I \\
+\dot{C} & = \tau I \\
+\dot{\mathcal{R}} & = \gamma I
+\end{align*}
+</script>
+</p>
+<p>Then note that</p>
+<p>
+<script type="math/tex; mode=display">
+\ddot{C} = \dot{\tau} I + \tau \dot{I}
+</script>
+</p>
+<p>and</p>
+<p>
+<script type="math/tex; mode=display">
+\begin{align*}
+\frac{\ddot{C}}{\dot{C}} = & \frac{\dot{\tau}}{\tau} + \frac{\dot{I}}{I} \\
+\frac{d}{dt} \log(\dot{C}) = &  \frac{\dot{\tau}}{\tau} + \frac{S}{N}\beta - \gamma \\
+= & \frac{\dot{\tau}}{\tau} + \gamma(R_t - 1)
+\end{align*}
+</script>
+</p>
+<p>which is the equation we have been using for estimation.</p>
+<h2 id="incorporating-death">Incorporating death<a class="headerlink" href="#incorporating-death" title="Permanent link">&para;</a></h2>
+<p>If we add deaths to the model, <script type="math/tex; mode=display">
+\begin{align*}
+\dot{S} & = -\frac{S}{N} \beta I \\
+\dot{I} & = \frac{S}{N} \beta I - \gamma I - p I\\
+\dot{C} & = \tau I \\
+\dot{\mathcal{R}} & = \gamma I \\
+\dot{D} & = p I
+\end{align*}
+</script>
+</p>
+<p>then,</p>
+<p>
+<script type="math/tex; mode=display">
+\begin{align*}
+\frac{\ddot{C}}{\dot{C}} = & \frac{\dot{\tau}}{\tau} + \frac{S}{N}\beta - \gamma - p \\
+\frac{\ddot{D}}{\dot{D}} = & \frac{S}{N}\beta - \gamma - p \\
+\end{align*}
+</script>
+</p>
+<p>Other observable states could similarly be added to the model.</p>
+<h2 id="time-delays">Time delays<a class="headerlink" href="#time-delays" title="Permanent link">&para;</a></h2>
+<p>A drawback of the above approach is that it implies changes in $R_t$
+show up in the derivatives of case and death numbers instantly. This is
+definitely not true. Instead consider a model where infections last
+$\ell$ days. After $\ell$ days, each infected person dies with
+probability $\pi$ and recovers otherwise. Then we have</p>
+<p>
+<script type="math/tex; mode=display">
+\begin{align*}
+\dot{S}(t) & = -\frac{S(t)}{N} \beta I \\
+\dot{I}(t) & = \frac{S(t)}{N} \beta(t) I(t) - \frac{S(t-\ell)}{N} \beta(t-\ell) I(t-\ell) \\
+\dot{C}(t) & = \tau(t) I(t) \\
+\dot{\mathcal{R}}(t) & = (1-\pi) \frac{S(t-\ell)}{N} \beta(t-\ell) I(t-\ell) \\
+\dot{D}(t) & = \pi \frac{S(t-\ell)}{N} \beta(t-\ell) I(t-\ell)
+\end{align*}
+</script>
+</p>
+<p>Rearranging gives <script type="math/tex; mode=display">
+\frac{\ddot{C}(t)}{\dot{C}(t)} = \frac{\dot{\tau}(t)}{\tau(t)} + \frac{S(t)}{N}\beta(t) - \frac{1}{\pi} \frac{\dot{D}(t)}{\dot{C}(t)}
+</script> and <script type="math/tex; mode=display">
+\dot{D}(t) = \pi \frac{S(t-\ell)}{N} \beta(t-\ell) \frac{\dot{C}(t-\ell)}{\tau(t-\ell)}
+</script>
+</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These last two equations also hold in the model without time delay by
+ setting $\ell=0$ and $\pi = \frac{p}{p+\gamma}$</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Random durations can be accomodated by replacing the shift by
+   $\ell$ with a convolution.</p>
+</div></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Paul Schrimpf</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML" defer></script>
+        <script src="../assets/mathjaxhelper.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form>
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
