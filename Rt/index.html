@@ -252,8 +252,8 @@ try
   using CovidData
 catch
   pkg&quot;registry add https://github.com/schrimpf/julia-registry.git&quot;
-  Pkg.dev(&quot;CovidData&quot;)
-  Pkg.dev(&quot;CovidRt&quot;)
+  Pkg.develop(&quot;CovidData&quot;)
+  Pkg.develop(&quot;CovidRt&quot;)
 end
 using DataFrames, Plots, StatsPlots, CovidRt, CovidData
 Plots.pyplot()
@@ -691,20 +691,21 @@ priors = (γ = truncated(Normal(1/7,1/7), 1/28, 1/1),
           ρ = Uniform(rlo, rhi))
 </code></pre>
 
-<pre><code>(γ = Truncated(Normal{Float64}(μ=0.14285714285714285, σ=0.14285714285714285
-), range=(0.03571428571428571, 1.0)), σR0 = Truncated(Normal{Float64}(μ=1.0
-, σ=3.0), range=(0.0, Inf)), α0 = IsoNormal(
+<pre><code>(γ = Truncated(Distributions.Normal{Float64}(μ=0.14285714285714285, σ=0.142
+85714285714285), range=(0.03571428571428571, 1.0)), σR0 = Truncated(Distrib
+utions.Normal{Float64}(μ=1.0, σ=3.0), range=(0.0, Inf)), α0 = IsoNormal(
 dim: 1
 μ: [1.0]
 Σ: [9.0]
 )
-, σR = Truncated(Normal{Float64}(μ=0.25, σ=1.0), range=(0.0, Inf)), σk = Tr
-uncated(Normal{Float64}(μ=0.1, σ=5.0), range=(0.0, Inf)), α = IsoNormal(
+, σR = Truncated(Distributions.Normal{Float64}(μ=0.25, σ=1.0), range=(0.0, 
+Inf)), σk = Truncated(Distributions.Normal{Float64}(μ=0.1, σ=5.0), range=(0
+.0, Inf)), α = IsoNormal(
 dim: 1
 μ: [1.0]
 Σ: [9.0]
 )
-, ρ = Uniform{Float64}(a=-1.0, b=1.1))
+, ρ = Distributions.Uniform{Float64}(a=-1.0, b=1.1))
 </code></pre>
 <p>The estimation is fast and the chain appears to mix well.</p>
 <pre><code class="julia">reestimate=false
@@ -727,7 +728,7 @@ x0 = inverse(trans,p0)
 @time LogDensityProblems.logdensity_and_gradient(∇P, x0);
 </code></pre>
 
-<pre><code>1.807361 seconds (3.93 M allocations: 193.900 MiB)
+<pre><code>3.330265 seconds (6.58 M allocations: 327.353 MiB, 4.54% gc time)
 </code></pre>
 <pre><code class="julia">rng = MersenneTwister()
 steps = 100
@@ -752,8 +753,8 @@ cc = MCMCChains.Chains(vals, names)
 display(cc)
 </code></pre>
 
-<pre><code>Object of type Chains, with data of type 2000×7×1 reshape(::Adjoint{Float64
-,Array{Float64,2}}, 2000, 7, 1) with eltype Float64
+<pre><code>Object of type Chains, with data of type 2000×7×1 reshape(::LinearAlgebra.A
+djoint{Float64,Array{Float64,2}}, 2000, 7, 1) with eltype Float64
 
 Iterations        = 1:2000
 Thinning interval = 1
@@ -761,7 +762,7 @@ Chains            = 1
 Samples per chain = 2000
 parameters        = γ, σR0, α0, σR, σk, α, ρ
 
-2-element Array{ChainDataFrame,1}
+2-element Array{MCMCChains.ChainDataFrame,1}
 
 Summary Statistics
   parameters    mean     std  naive_se    mcse        ess   r_hat
