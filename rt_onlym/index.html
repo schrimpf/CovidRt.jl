@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Paul Schrimpf">
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Without policies - CovidRt.jl</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atelier-dune-light.min.css">
+        <link href="../assets/Documenter.css" rel="stylesheet">
+        <link href="../assets/extra.css" rel="stylesheet">
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">CovidRt.jl</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href=".." class="nav-link">Package Docs</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Reproductive number estimates <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../Rt/" class="dropdown-item">Systrom Approach</a>
+</li>
+                                    
+<li>
+    <a href="../rt_longdiff/" class="dropdown-item">Long-differening</a>
+</li>
+                                    
+<li>
+    <a href="./" class="dropdown-item active">Without policies</a>
+</li>
+                                    
+<li>
+    <a href="../extensions/" class="dropdown-item">Extensions</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../license/" class="dropdown-item">License</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../rt_longdiff/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../extensions/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/schrimpf/CovidRt.jl/edit/master/docs/rt_onlym.md" class="nav-link"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#results" class="nav-link">Results</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#l1-3-l2-7" class="nav-link">L₁ = 3, L₂ = 7</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#l1-7-l2-7" class="nav-link">L₁ = 7, L₂ = 7</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="results">Results<a class="headerlink" href="#results" title="Permanent link">&para;</a></h1>
+<pre><code class="julia">## data prep
+using CovidData
+using CovidRt
+using TransformVariables, Parameters, Plots,  StatsPlots, DataFrames, Dates, LinearAlgebra, Distributions, Random, LogDensityProblems, DynamicHMC, MCMCChains, JLD2, Latexify
+Plots.pyplot()
+df = CovidData.statedata(policies=:indicators, fillmissingmobility=true)
+
+pvars = [Symbol(&quot;Stay.at.home..shelter.in.place&quot;),
+         #Symbol(&quot;State.of.emergency&quot;),
+         Symbol(&quot;Date.closed.K.12.schools&quot;),
+         Symbol(&quot;Closed.gyms&quot;),
+         Symbol(&quot;Closed.movie.theaters&quot;),
+         Symbol(&quot;Closed.day.cares&quot;),
+         Symbol(&quot;Date.banned.visitors.to.nursing.homes&quot;),
+         Symbol(&quot;Closed.non.essential.businesses&quot;),
+         Symbol(&quot;Closed.restaurants.except.take.out&quot;)]
+
+mvars = [:retail_and_recreation_percent_change_from_baseline,
+         :grocery_and_pharmacy_percent_change_from_baseline,
+         :parks_percent_change_from_baseline ,
+         :transit_stations_percent_change_from_baseline,
+         :workplaces_percent_change_from_baseline,
+         :residential_percent_change_from_baseline,
+         :percentchangebusinesses]
+
+df[!,:logpopdens] = log.(df[!,Symbol(&quot;Population.density.per.square.miles&quot;)])
+df[!,:weekend] = dayofweek.(df[!,:date]) .&gt;= 6
+x0vars=[:constant, :logpopdens,
+        Symbol(&quot;Percent.Unemployed..2018.&quot;),
+        Symbol(&quot;Percent.living.under.the.federal.poverty.line..2018.&quot;),
+        Symbol(&quot;Percent.at.risk.for.serious.illness.due.to.COVID&quot;)]
+
+sdf = filter(x-&gt;x.fips&lt;60, df)
+sdf = sort(sdf, (:state, :date))
+sdf[!,mvars] ./= 100
+sdf[!,:constant] .= 1
+xvars = vcat(x0vars, mvars);
+</code></pre>
+
+<p>Here, we will allow the initial and time varying mean of $R_{s,t}$ to
+depend on covariates.</p>
+<p>
+<script type="math/tex; mode=display">
+\begin{align*}
+\tilde{R}_{s,0} & \sim N(X_{0,s} \alpha_0, \sigma^2_{R,0}) \\
+\tilde{R}_{s,t} & = \rho \tilde{R}_{s,t} + u_{s,t} \;,\; u_{s,t} \sim
+N(0, \sigma^2_R) \\
+R_{s,t} & = X_{s,t} \alpha + \tilde{R}_{s,t} \\
+\Delta \log(k)_{s,t} & = \gamma (R_{s,t} - 1) + \epsilon_{s,t} -
+\epsilon_{s,t-1} \;, \; \epsilon_{s,t} \sim N(0, \sigma^2_k)
+\end{align*}
+</script>
+</p>
+<p>We present estimates of $R_t$ with <script type="math/tex; mode=display">
+\Delta C(t) = C(t) - C(t-L_1)
+</script>
+</p>
+<p>and</p>
+<p>
+<script type="math/tex; mode=display">
+\Delta log (\Delta C(t)) =  log (\Delta C(t)) -  log (\Delta C(t - L_2))
+</script>
+</p>
+<p>for a variety of values of $L_1$ and $L_2$</p>
+<pre><code class="julia">reestimate=false
+rlo=-1 #1 - eps(Float64)
+rhi=1.2 #1+ eps(Float64)
+K = length(xvars)
+priors = (γ = truncated(Normal(1/7,1/7), 1/28, 1/1),
+          σR0 = truncated(Normal(1, 3), 0, Inf),
+          α0 = MvNormal(zeros(length(x0vars)), sqrt(10)), #truncated(Normal(1, 3), 0, Inf),
+          σR = truncated(Normal(0.25,1),0,Inf),
+          σk = truncated(Normal(0.1, 5), 0, Inf),
+          ρ = Uniform(rlo, rhi),
+          α = MvNormal(zeros(K), sqrt(10))
+          )
+
+states_to_plot = [&quot;New York&quot;, &quot;New Jersey&quot;,&quot;Massachusetts&quot;,&quot;California&quot;,
+                  &quot;Georgia&quot;,&quot;Illinois&quot;,&quot;Michigan&quot;,
+                  &quot;Ohio&quot;,&quot;Wisconsin&quot;,&quot;Washington&quot;]
+warmup = default_warmup_stages(local_optimization=nothing,
+                               stepsize_search=nothing,
+                               init_steps=100, middle_steps=100,
+                               terminating_steps=2*100,
+                               doubling_stages=2, M=Symmetric)
+for L1 in [3, 7]
+  for L2 in [7]
+    mdl = CovidRt.RtModel(sdf, Symbol(&quot;cases.nyt&quot;), xvars, x0vars,
+                          priors; L1=L1, L2=L2,
+                          time0=r-&gt;(r[Symbol(&quot;cases.nyt&quot;)].&gt;=5))
+    estfile = &quot;rt_onlym_$(L1)_$(L2).jld2&quot;
+
+    if !isfile(estfile) || reestimate
+      post = CovidRt.mcmc(mdl; iterations=2000, warmup=warmup)
+      @save estfile post
+    end
+    @load estfile post
+    cc = CovidRt.MCMCChain(post, xvars, x0vars)
+
+    println(&quot;## L₁ = $(L1), L₂ = $(L2)&quot;)
+    println()
+
+    #display(plot(cc))
+
+    println(latexify(DataFrame(describe(cc)[1]), env=:mdtable, latex=false, fmt=x-&gt;round(x, sigdigits=3)))
+    println(latexify(DataFrame(describe(cc)[2]), env=:mdtable, latex=false, fmt=x-&gt;round(x, sigdigits=3)))
+    states = mdl.id
+    S = length(states_to_plot)
+    figs = fill(plot(), S)
+    for (i,st) in enumerate(states_to_plot)
+      s = findfirst(states.==st)
+      figr = CovidRt.plotpostr(mdl.t[s],mdl.dlogk[s],post, mdl.X[s], mdl.X0[s])
+      l = @layout [a{.1h}; grid(1,1)]
+      figs[i] = plot(plot(annotation=(0.5,0.5, st*&quot;, L₁=$(L1) L₂=$(L2)&quot;), framestyle = :none),
+                     plot(figr, ylim=(-1,15)), layout=l)
+      display(figs[i])
+    end
+  end
+end
+</code></pre>
+
+<h2 id="l1-3-l2-7">L₁ = 3, L₂ = 7<a class="headerlink" href="#l1-3-l2-7" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0394</td>
+<td align="right">0.00378</td>
+<td align="right">8.45e-5</td>
+<td align="right">0.000259</td>
+<td align="right">191.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">3.9</td>
+<td align="right">0.487</td>
+<td align="right">0.0109</td>
+<td align="right">0.0438</td>
+<td align="right">118.0</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">1.93</td>
+<td align="right">2.65</td>
+<td align="right">0.0593</td>
+<td align="right">0.283</td>
+<td align="right">94.9</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-0.495</td>
+<td align="right">0.549</td>
+<td align="right">0.0123</td>
+<td align="right">0.0808</td>
+<td align="right">43.9</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">1.15</td>
+<td align="right">0.892</td>
+<td align="right">0.02</td>
+<td align="right">0.126</td>
+<td align="right">41.2</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.258</td>
+<td align="right">0.399</td>
+<td align="right">0.00893</td>
+<td align="right">0.0511</td>
+<td align="right">39.0</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.155</td>
+<td align="right">0.156</td>
+<td align="right">0.00349</td>
+<td align="right">0.0161</td>
+<td align="right">121.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">1.5</td>
+<td align="right">0.128</td>
+<td align="right">0.00287</td>
+<td align="right">0.00876</td>
+<td align="right">188.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.00346</td>
+<td align="right">0.00218</td>
+<td align="right">4.87e-5</td>
+<td align="right">0.000153</td>
+<td align="right">141.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.888</td>
+<td align="right">0.00862</td>
+<td align="right">0.000193</td>
+<td align="right">0.000372</td>
+<td align="right">464.0</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">3.3</td>
+<td align="right">1.93</td>
+<td align="right">0.0432</td>
+<td align="right">0.218</td>
+<td align="right">67.3</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.43</td>
+<td align="right">0.229</td>
+<td align="right">0.00512</td>
+<td align="right">0.0251</td>
+<td align="right">91.3</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-0.411</td>
+<td align="right">0.389</td>
+<td align="right">0.0087</td>
+<td align="right">0.055</td>
+<td align="right">40.1</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">0.0618</td>
+<td align="right">0.163</td>
+<td align="right">0.00364</td>
+<td align="right">0.0195</td>
+<td align="right">69.8</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.0491</td>
+<td align="right">0.065</td>
+<td align="right">0.00145</td>
+<td align="right">0.00681</td>
+<td align="right">76.4</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">0.963</td>
+<td align="right">0.949</td>
+<td align="right">0.0212</td>
+<td align="right">0.102</td>
+<td align="right">109.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">0.389</td>
+<td align="right">0.664</td>
+<td align="right">0.0148</td>
+<td align="right">0.0742</td>
+<td align="right">71.5</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.0759</td>
+<td align="right">0.131</td>
+<td align="right">0.00293</td>
+<td align="right">0.0134</td>
+<td align="right">79.9</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-1.2</td>
+<td align="right">0.979</td>
+<td align="right">0.0219</td>
+<td align="right">0.123</td>
+<td align="right">86.1</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">0.772</td>
+<td align="right">0.956</td>
+<td align="right">0.0214</td>
+<td align="right">0.145</td>
+<td align="right">28.0</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">0.408</td>
+<td align="right">1.44</td>
+<td align="right">0.0322</td>
+<td align="right">0.227</td>
+<td align="right">19.0</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">-0.102</td>
+<td align="right">0.756</td>
+<td align="right">0.0169</td>
+<td align="right">0.0917</td>
+<td align="right">69.8</td>
+<td align="right">1.01</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0358</td>
+<td align="right">0.0366</td>
+<td align="right">0.0382</td>
+<td align="right">0.041</td>
+<td align="right">0.0494</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">2.92</td>
+<td align="right">3.59</td>
+<td align="right">3.91</td>
+<td align="right">4.21</td>
+<td align="right">4.86</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-3.46</td>
+<td align="right">0.291</td>
+<td align="right">1.99</td>
+<td align="right">3.72</td>
+<td align="right">7.31</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-1.63</td>
+<td align="right">-0.852</td>
+<td align="right">-0.518</td>
+<td align="right">-0.074</td>
+<td align="right">0.569</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-0.675</td>
+<td align="right">0.556</td>
+<td align="right">1.17</td>
+<td align="right">1.75</td>
+<td align="right">2.85</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-1.01</td>
+<td align="right">-0.525</td>
+<td align="right">-0.268</td>
+<td align="right">0.00153</td>
+<td align="right">0.577</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.173</td>
+<td align="right">0.0554</td>
+<td align="right">0.155</td>
+<td align="right">0.259</td>
+<td align="right">0.454</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">1.18</td>
+<td align="right">1.43</td>
+<td align="right">1.54</td>
+<td align="right">1.6</td>
+<td align="right">1.67</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.000183</td>
+<td align="right">0.00173</td>
+<td align="right">0.00318</td>
+<td align="right">0.00491</td>
+<td align="right">0.00815</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.871</td>
+<td align="right">0.882</td>
+<td align="right">0.888</td>
+<td align="right">0.894</td>
+<td align="right">0.905</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-0.243</td>
+<td align="right">2.0</td>
+<td align="right">3.28</td>
+<td align="right">4.69</td>
+<td align="right">6.9</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">-0.00738</td>
+<td align="right">0.265</td>
+<td align="right">0.438</td>
+<td align="right">0.595</td>
+<td align="right">0.845</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-1.15</td>
+<td align="right">-0.679</td>
+<td align="right">-0.436</td>
+<td align="right">-0.15</td>
+<td align="right">0.435</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.266</td>
+<td align="right">-0.0391</td>
+<td align="right">0.0648</td>
+<td align="right">0.175</td>
+<td align="right">0.372</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.175</td>
+<td align="right">-0.0937</td>
+<td align="right">-0.0507</td>
+<td align="right">-0.00409</td>
+<td align="right">0.073</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-0.913</td>
+<td align="right">0.342</td>
+<td align="right">0.936</td>
+<td align="right">1.65</td>
+<td align="right">2.78</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-0.816</td>
+<td align="right">-0.0806</td>
+<td align="right">0.359</td>
+<td align="right">0.864</td>
+<td align="right">1.68</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.332</td>
+<td align="right">-0.168</td>
+<td align="right">-0.0747</td>
+<td align="right">0.0175</td>
+<td align="right">0.157</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-3.02</td>
+<td align="right">-1.9</td>
+<td align="right">-1.24</td>
+<td align="right">-0.513</td>
+<td align="right">0.765</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-1.15</td>
+<td align="right">0.13</td>
+<td align="right">0.762</td>
+<td align="right">1.41</td>
+<td align="right">2.59</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-2.06</td>
+<td align="right">-0.696</td>
+<td align="right">0.339</td>
+<td align="right">1.5</td>
+<td align="right">3.24</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">-1.52</td>
+<td align="right">-0.613</td>
+<td align="right">-0.125</td>
+<td align="right">0.425</td>
+<td align="right">1.45</td>
+</tr>
+</tbody>
+</table>
+<h2 id="l1-7-l2-7">L₁ = 7, L₂ = 7<a class="headerlink" href="#l1-7-l2-7" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0387</td>
+<td align="right">0.00296</td>
+<td align="right">6.62e-5</td>
+<td align="right">0.000194</td>
+<td align="right">161.0</td>
+<td align="right">1.03</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">2.89</td>
+<td align="right">0.329</td>
+<td align="right">0.00735</td>
+<td align="right">0.0194</td>
+<td align="right">173.0</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-0.509</td>
+<td align="right">2.74</td>
+<td align="right">0.0612</td>
+<td align="right">0.51</td>
+<td align="right">14.6</td>
+<td align="right">1.04</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-0.307</td>
+<td align="right">0.414</td>
+<td align="right">0.00925</td>
+<td align="right">0.0403</td>
+<td align="right">84.6</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">0.789</td>
+<td align="right">0.711</td>
+<td align="right">0.0159</td>
+<td align="right">0.0741</td>
+<td align="right">62.9</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.326</td>
+<td align="right">0.301</td>
+<td align="right">0.00674</td>
+<td align="right">0.0278</td>
+<td align="right">103.0</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.263</td>
+<td align="right">0.118</td>
+<td align="right">0.00263</td>
+<td align="right">0.013</td>
+<td align="right">65.3</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">0.9</td>
+<td align="right">0.0622</td>
+<td align="right">0.00139</td>
+<td align="right">0.00391</td>
+<td align="right">169.0</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.00142</td>
+<td align="right">0.000791</td>
+<td align="right">1.77e-5</td>
+<td align="right">7.61e-5</td>
+<td align="right">105.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.939</td>
+<td align="right">0.00599</td>
+<td align="right">0.000134</td>
+<td align="right">0.000203</td>
+<td align="right">782.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">3.08</td>
+<td align="right">2.32</td>
+<td align="right">0.052</td>
+<td align="right">0.462</td>
+<td align="right">8.03</td>
+<td align="right">1.37</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.559</td>
+<td align="right">0.275</td>
+<td align="right">0.00615</td>
+<td align="right">0.0296</td>
+<td align="right">73.3</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-0.429</td>
+<td align="right">0.416</td>
+<td align="right">0.00929</td>
+<td align="right">0.0414</td>
+<td align="right">73.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">0.112</td>
+<td align="right">0.18</td>
+<td align="right">0.00403</td>
+<td align="right">0.0168</td>
+<td align="right">105.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.104</td>
+<td align="right">0.0846</td>
+<td align="right">0.00189</td>
+<td align="right">0.0135</td>
+<td align="right">10.1</td>
+<td align="right">1.15</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">0.602</td>
+<td align="right">0.58</td>
+<td align="right">0.013</td>
+<td align="right">0.0754</td>
+<td align="right">59.8</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-0.766</td>
+<td align="right">0.426</td>
+<td align="right">0.00952</td>
+<td align="right">0.0422</td>
+<td align="right">99.2</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">0.0432</td>
+<td align="right">0.0793</td>
+<td align="right">0.00177</td>
+<td align="right">0.00773</td>
+<td align="right">73.3</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-0.125</td>
+<td align="right">0.507</td>
+<td align="right">0.0113</td>
+<td align="right">0.0629</td>
+<td align="right">43.6</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-0.0178</td>
+<td align="right">0.575</td>
+<td align="right">0.0129</td>
+<td align="right">0.0637</td>
+<td align="right">64.6</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-0.139</td>
+<td align="right">0.927</td>
+<td align="right">0.0207</td>
+<td align="right">0.0948</td>
+<td align="right">62.7</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">0.457</td>
+<td align="right">0.477</td>
+<td align="right">0.0107</td>
+<td align="right">0.0414</td>
+<td align="right">109.0</td>
+<td align="right">1.0</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0358</td>
+<td align="right">0.0366</td>
+<td align="right">0.0378</td>
+<td align="right">0.04</td>
+<td align="right">0.0465</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">2.23</td>
+<td align="right">2.69</td>
+<td align="right">2.9</td>
+<td align="right">3.11</td>
+<td align="right">3.55</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-5.95</td>
+<td align="right">-2.44</td>
+<td align="right">-0.362</td>
+<td align="right">1.42</td>
+<td align="right">4.76</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-1.15</td>
+<td align="right">-0.592</td>
+<td align="right">-0.294</td>
+<td align="right">-0.0481</td>
+<td align="right">0.564</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-0.698</td>
+<td align="right">0.375</td>
+<td align="right">0.809</td>
+<td align="right">1.26</td>
+<td align="right">2.07</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.908</td>
+<td align="right">-0.521</td>
+<td align="right">-0.328</td>
+<td align="right">-0.116</td>
+<td align="right">0.272</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.021</td>
+<td align="right">0.187</td>
+<td align="right">0.261</td>
+<td align="right">0.346</td>
+<td align="right">0.479</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">0.744</td>
+<td align="right">0.867</td>
+<td align="right">0.916</td>
+<td align="right">0.946</td>
+<td align="right">0.976</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.000219</td>
+<td align="right">0.000794</td>
+<td align="right">0.00134</td>
+<td align="right">0.00193</td>
+<td align="right">0.00324</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.928</td>
+<td align="right">0.935</td>
+<td align="right">0.939</td>
+<td align="right">0.944</td>
+<td align="right">0.95</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-0.958</td>
+<td align="right">1.33</td>
+<td align="right">2.91</td>
+<td align="right">4.8</td>
+<td align="right">7.96</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.0253</td>
+<td align="right">0.361</td>
+<td align="right">0.557</td>
+<td align="right">0.76</td>
+<td align="right">1.08</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-1.18</td>
+<td align="right">-0.727</td>
+<td align="right">-0.421</td>
+<td align="right">-0.152</td>
+<td align="right">0.376</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.242</td>
+<td align="right">-0.0059</td>
+<td align="right">0.111</td>
+<td align="right">0.239</td>
+<td align="right">0.459</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.276</td>
+<td align="right">-0.164</td>
+<td align="right">-0.103</td>
+<td align="right">-0.0421</td>
+<td align="right">0.0494</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-0.513</td>
+<td align="right">0.206</td>
+<td align="right">0.6</td>
+<td align="right">0.966</td>
+<td align="right">1.76</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-1.63</td>
+<td align="right">-1.04</td>
+<td align="right">-0.758</td>
+<td align="right">-0.468</td>
+<td align="right">0.0631</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.124</td>
+<td align="right">-0.00449</td>
+<td align="right">0.0471</td>
+<td align="right">0.0967</td>
+<td align="right">0.191</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-1.19</td>
+<td align="right">-0.467</td>
+<td align="right">-0.107</td>
+<td align="right">0.212</td>
+<td align="right">0.794</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-1.18</td>
+<td align="right">-0.397</td>
+<td align="right">0.00054</td>
+<td align="right">0.38</td>
+<td align="right">1.1</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-1.99</td>
+<td align="right">-0.781</td>
+<td align="right">-0.129</td>
+<td align="right">0.495</td>
+<td align="right">1.65</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">-0.482</td>
+<td align="right">0.133</td>
+<td align="right">0.476</td>
+<td align="right">0.776</td>
+<td align="right">1.39</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="" src="../figures/rt_onlym_2_1.png" /> <img alt="" src="../figures/rt_onlym_2_2.png" />
+<img alt="" src="../figures/rt_onlym_2_3.png" /> <img alt="" src="../figures/rt_onlym_2_4.png" />
+<img alt="" src="../figures/rt_onlym_2_5.png" /> <img alt="" src="../figures/rt_onlym_2_6.png" />
+<img alt="" src="../figures/rt_onlym_2_7.png" /> <img alt="" src="../figures/rt_onlym_2_8.png" />
+<img alt="" src="../figures/rt_onlym_2_9.png" /> <img alt="" src="../figures/rt_onlym_2_10.png" />
+<img alt="" src="../figures/rt_onlym_2_11.png" /> <img alt="" src="../figures/rt_onlym_2_12.png" />
+<img alt="" src="../figures/rt_onlym_2_13.png" /> <img alt="" src="../figures/rt_onlym_2_14.png" />
+<img alt="" src="../figures/rt_onlym_2_15.png" /> <img alt="" src="../figures/rt_onlym_2_16.png" />
+<img alt="" src="../figures/rt_onlym_2_17.png" /> <img alt="" src="../figures/rt_onlym_2_18.png" />
+<img alt="" src="../figures/rt_onlym_2_19.png" /> <img alt="" src="../figures/rt_onlym_2_20.png" /></p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Paul Schrimpf</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML" defer></script>
+        <script src="../assets/mathjaxhelper.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form>
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
