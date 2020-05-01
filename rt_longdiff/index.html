@@ -117,6 +117,46 @@
               <ul class="nav flex-column">
               </ul>
             </li>
+            
+            <li class="nav-item" data-level="2"><a href="#l1-1-l2-3" class="nav-link">L₁ = 1, L₂ = 3</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#l1-1-l2-7" class="nav-link">L₁ = 1, L₂ = 7</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#l1-3-l2-1" class="nav-link">L₁ = 3, L₂ = 1</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#l1-3-l2-3" class="nav-link">L₁ = 3, L₂ = 3</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#l1-3-l2-7" class="nav-link">L₁ = 3, L₂ = 7</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#l1-7-l2-1" class="nav-link">L₁ = 7, L₂ = 1</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#l1-7-l2-3" class="nav-link">L₁ = 7, L₂ = 3</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#l1-7-l2-7" class="nav-link">L₁ = 7, L₂ = 7</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
         </ul>
     </div>
 </div></div>
@@ -168,28 +208,45 @@ $L$. For example, if $\Delta C(t) = C^\ast(t) - C^\ast(t-\delta)$ with
 $\delta$ a random, independent increment with mean $1$, then variance
 will tend to decrease with $L$ regardless of $C^\ast(t)$.</p>
 <h2 id="results">Results<a class="headerlink" href="#results" title="Permanent link">&para;</a></h2>
-<pre><code>20-element Array{Symbol,1}:
- Symbol("Stay.at.home..shelter.in.place")
- Symbol("Date.closed.K.12.schools")
- Symbol("Closed.gyms")
- Symbol("Closed.movie.theaters")
- Symbol("Closed.day.cares")
- Symbol("Date.banned.visitors.to.nursing.homes")
- Symbol("Closed.non.essential.businesses")
- Symbol("Closed.restaurants.except.take.out")
- :retail_and_recreation_percent_change_from_baseline
- :grocery_and_pharmacy_percent_change_from_baseline
- :parks_percent_change_from_baseline
- :transit_stations_percent_change_from_baseline
- :workplaces_percent_change_from_baseline
- :residential_percent_change_from_baseline
- :percentchangebusinesses
- :constant
- :logpopdens
- Symbol("Percent.Unemployed..2018.")
- Symbol("Percent.living.under.the.federal.poverty.line..2018.")
- Symbol("Percent.at.risk.for.serious.illness.due.to.COVID")
+<pre><code class="julia"># data prep
+using CovidData
+using CovidRt
+using TransformVariables, Parameters, Plots,  StatsPlots, DataFrames, Dates, LinearAlgebra, Distributions, Random, LogDensityProblems, DynamicHMC, MCMCChains, JLD2, Latexify
+Plots.pyplot()
+df = CovidData.statedata(policies=:indicators, fillmissingmobility=true)
+
+pvars = [Symbol(&quot;Stay.at.home..shelter.in.place&quot;),
+         #Symbol(&quot;State.of.emergency&quot;),
+         Symbol(&quot;Date.closed.K.12.schools&quot;),
+         Symbol(&quot;Closed.gyms&quot;),
+         Symbol(&quot;Closed.movie.theaters&quot;),
+         Symbol(&quot;Closed.day.cares&quot;),
+         Symbol(&quot;Date.banned.visitors.to.nursing.homes&quot;),
+         Symbol(&quot;Closed.non.essential.businesses&quot;),
+         Symbol(&quot;Closed.restaurants.except.take.out&quot;)]
+
+mvars = [:retail_and_recreation_percent_change_from_baseline,
+         :grocery_and_pharmacy_percent_change_from_baseline,
+         :parks_percent_change_from_baseline ,
+         :transit_stations_percent_change_from_baseline,
+         :workplaces_percent_change_from_baseline,
+         :residential_percent_change_from_baseline,
+         :percentchangebusinesses]
+
+df[!,:logpopdens] = log.(df[!,Symbol(&quot;Population.density.per.square.miles&quot;)])
+df[!,:weekend] = dayofweek.(df[!,:date]) .&gt;= 6
+x0vars=[:constant, :logpopdens,
+        Symbol(&quot;Percent.Unemployed..2018.&quot;),
+        Symbol(&quot;Percent.living.under.the.federal.poverty.line..2018.&quot;),
+        Symbol(&quot;Percent.at.risk.for.serious.illness.due.to.COVID&quot;)]
+
+sdf = filter(x-&gt;x.fips&lt;60, df)
+sdf = sort(sdf, (:state, :date))
+sdf[!,mvars] ./= 100
+sdf[!,:constant] .= 1
+xvars = vcat(pvars,mvars, x0vars);
 </code></pre>
+
 <p>Here, we will allow the initial and time varying mean of $R_{s,t}$ to
 depend on covariates.</p>
 <p>
@@ -273,8 +330,4915 @@ end
 </code></pre>
 
 <h2 id="l1-1-l2-1">L₁ = 1, L₂ = 1<a class="headerlink" href="#l1-1-l2-1" title="Permanent link">&para;</a></h2>
-<p>Error: UndefVarError: latexify not defined</p>
-<p><img alt="" src="../figures/rt_longdiff_2_1.png" /></p></div>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.238</td>
+<td align="right">0.0335</td>
+<td align="right">0.000749</td>
+<td align="right">0.000933</td>
+<td align="right">1130.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">8.32</td>
+<td align="right">1.3</td>
+<td align="right">0.029</td>
+<td align="right">0.0353</td>
+<td align="right">1320.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">0.0833</td>
+<td align="right">3.13</td>
+<td align="right">0.0699</td>
+<td align="right">0.0621</td>
+<td align="right">2950.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-2.18</td>
+<td align="right">1.48</td>
+<td align="right">0.0332</td>
+<td align="right">0.0268</td>
+<td align="right">2420.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-3.42</td>
+<td align="right">2.18</td>
+<td align="right">0.0488</td>
+<td align="right">0.0288</td>
+<td align="right">2900.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">0.697</td>
+<td align="right">1.11</td>
+<td align="right">0.0248</td>
+<td align="right">0.019</td>
+<td align="right">2890.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.16</td>
+<td align="right">0.389</td>
+<td align="right">0.0087</td>
+<td align="right">0.00803</td>
+<td align="right">2510.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">3.71</td>
+<td align="right">0.515</td>
+<td align="right">0.0115</td>
+<td align="right">0.0148</td>
+<td align="right">1170.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.0262</td>
+<td align="right">0.0191</td>
+<td align="right">0.000428</td>
+<td align="right">0.000334</td>
+<td align="right">2370.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">-0.475</td>
+<td align="right">0.0166</td>
+<td align="right">0.000372</td>
+<td align="right">0.000307</td>
+<td align="right">3390.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-0.249</td>
+<td align="right">0.159</td>
+<td align="right">0.00355</td>
+<td align="right">0.00358</td>
+<td align="right">3040.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-0.0826</td>
+<td align="right">0.235</td>
+<td align="right">0.00526</td>
+<td align="right">0.00409</td>
+<td align="right">2540.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-0.208</td>
+<td align="right">0.309</td>
+<td align="right">0.0069</td>
+<td align="right">0.00685</td>
+<td align="right">2550.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">0.124</td>
+<td align="right">0.322</td>
+<td align="right">0.0072</td>
+<td align="right">0.00762</td>
+<td align="right">2770.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">0.0223</td>
+<td align="right">0.139</td>
+<td align="right">0.0031</td>
+<td align="right">0.00217</td>
+<td align="right">2380.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.0253</td>
+<td align="right">0.122</td>
+<td align="right">0.00272</td>
+<td align="right">0.00217</td>
+<td align="right">3140.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-0.137</td>
+<td align="right">0.174</td>
+<td align="right">0.00389</td>
+<td align="right">0.00384</td>
+<td align="right">2810.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">0.116</td>
+<td align="right">0.276</td>
+<td align="right">0.00618</td>
+<td align="right">0.00662</td>
+<td align="right">3020.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-0.825</td>
+<td align="right">0.892</td>
+<td align="right">0.0199</td>
+<td align="right">0.0165</td>
+<td align="right">2530.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">0.864</td>
+<td align="right">0.68</td>
+<td align="right">0.0152</td>
+<td align="right">0.0141</td>
+<td align="right">2650.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">0.238</td>
+<td align="right">0.191</td>
+<td align="right">0.00427</td>
+<td align="right">0.00338</td>
+<td align="right">3060.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-0.0101</td>
+<td align="right">0.776</td>
+<td align="right">0.0174</td>
+<td align="right">0.0128</td>
+<td align="right">2870.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-1.79</td>
+<td align="right">1.24</td>
+<td align="right">0.0277</td>
+<td align="right">0.0293</td>
+<td align="right">2990.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">2.04</td>
+<td align="right">2.2</td>
+<td align="right">0.0492</td>
+<td align="right">0.0416</td>
+<td align="right">2990.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">3.6</td>
+<td align="right">1.0</td>
+<td align="right">0.0225</td>
+<td align="right">0.0215</td>
+<td align="right">2050.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-0.203</td>
+<td align="right">0.735</td>
+<td align="right">0.0164</td>
+<td align="right">0.0187</td>
+<td align="right">2930.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.075</td>
+<td align="right">0.0441</td>
+<td align="right">0.000986</td>
+<td align="right">0.000726</td>
+<td align="right">2990.0</td>
+<td align="right">0.999</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">0.124</td>
+<td align="right">0.0833</td>
+<td align="right">0.00186</td>
+<td align="right">0.00124</td>
+<td align="right">2810.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.039</td>
+<td align="right">0.0365</td>
+<td align="right">0.000816</td>
+<td align="right">0.000413</td>
+<td align="right">3100.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.0417</td>
+<td align="right">0.0208</td>
+<td align="right">0.000464</td>
+<td align="right">0.000489</td>
+<td align="right">2800.0</td>
+<td align="right">1.0</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.182</td>
+<td align="right">0.214</td>
+<td align="right">0.236</td>
+<td align="right">0.258</td>
+<td align="right">0.31</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">6.03</td>
+<td align="right">7.4</td>
+<td align="right">8.25</td>
+<td align="right">9.12</td>
+<td align="right">11.0</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-5.99</td>
+<td align="right">-2.06</td>
+<td align="right">0.12</td>
+<td align="right">2.33</td>
+<td align="right">6.06</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-5.22</td>
+<td align="right">-3.12</td>
+<td align="right">-2.18</td>
+<td align="right">-1.15</td>
+<td align="right">0.743</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-7.63</td>
+<td align="right">-4.89</td>
+<td align="right">-3.44</td>
+<td align="right">-1.99</td>
+<td align="right">0.895</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-1.46</td>
+<td align="right">-0.0199</td>
+<td align="right">0.688</td>
+<td align="right">1.42</td>
+<td align="right">2.85</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.595</td>
+<td align="right">-0.0946</td>
+<td align="right">0.156</td>
+<td align="right">0.423</td>
+<td align="right">0.925</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">2.79</td>
+<td align="right">3.36</td>
+<td align="right">3.67</td>
+<td align="right">4.04</td>
+<td align="right">4.78</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.000933</td>
+<td align="right">0.0108</td>
+<td align="right">0.0225</td>
+<td align="right">0.0376</td>
+<td align="right">0.0722</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">-0.508</td>
+<td align="right">-0.487</td>
+<td align="right">-0.475</td>
+<td align="right">-0.464</td>
+<td align="right">-0.443</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-0.561</td>
+<td align="right">-0.351</td>
+<td align="right">-0.243</td>
+<td align="right">-0.141</td>
+<td align="right">0.0409</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-0.544</td>
+<td align="right">-0.233</td>
+<td align="right">-0.0781</td>
+<td align="right">0.0802</td>
+<td align="right">0.381</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-0.789</td>
+<td align="right">-0.414</td>
+<td align="right">-0.206</td>
+<td align="right">-0.0096</td>
+<td align="right">0.404</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-0.514</td>
+<td align="right">-0.083</td>
+<td align="right">0.114</td>
+<td align="right">0.342</td>
+<td align="right">0.783</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-0.255</td>
+<td align="right">-0.0684</td>
+<td align="right">0.0255</td>
+<td align="right">0.108</td>
+<td align="right">0.289</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.271</td>
+<td align="right">-0.104</td>
+<td align="right">-0.0254</td>
+<td align="right">0.0546</td>
+<td align="right">0.211</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-0.486</td>
+<td align="right">-0.246</td>
+<td align="right">-0.137</td>
+<td align="right">-0.0233</td>
+<td align="right">0.21</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">-0.413</td>
+<td align="right">-0.0719</td>
+<td align="right">0.115</td>
+<td align="right">0.303</td>
+<td align="right">0.662</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-2.62</td>
+<td align="right">-1.41</td>
+<td align="right">-0.817</td>
+<td align="right">-0.23</td>
+<td align="right">0.852</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-0.482</td>
+<td align="right">0.43</td>
+<td align="right">0.858</td>
+<td align="right">1.3</td>
+<td align="right">2.19</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.139</td>
+<td align="right">0.106</td>
+<td align="right">0.235</td>
+<td align="right">0.366</td>
+<td align="right">0.625</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-1.52</td>
+<td align="right">-0.532</td>
+<td align="right">-0.0456</td>
+<td align="right">0.52</td>
+<td align="right">1.56</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-4.22</td>
+<td align="right">-2.62</td>
+<td align="right">-1.79</td>
+<td align="right">-0.966</td>
+<td align="right">0.585</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-2.18</td>
+<td align="right">0.592</td>
+<td align="right">2.0</td>
+<td align="right">3.47</td>
+<td align="right">6.4</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">1.71</td>
+<td align="right">2.9</td>
+<td align="right">3.57</td>
+<td align="right">4.27</td>
+<td align="right">5.65</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-1.72</td>
+<td align="right">-0.668</td>
+<td align="right">-0.198</td>
+<td align="right">0.306</td>
+<td align="right">1.19</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">-0.00984</td>
+<td align="right">0.0462</td>
+<td align="right">0.0738</td>
+<td align="right">0.104</td>
+<td align="right">0.165</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-0.0336</td>
+<td align="right">0.0683</td>
+<td align="right">0.122</td>
+<td align="right">0.179</td>
+<td align="right">0.288</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.113</td>
+<td align="right">-0.063</td>
+<td align="right">-0.0372</td>
+<td align="right">-0.015</td>
+<td align="right">0.0308</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.00243</td>
+<td align="right">0.0276</td>
+<td align="right">0.0408</td>
+<td align="right">0.0551</td>
+<td align="right">0.0831</td>
+</tr>
+</tbody>
+</table>
+<h2 id="l1-1-l2-3">L₁ = 1, L₂ = 3<a class="headerlink" href="#l1-1-l2-3" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.115</td>
+<td align="right">0.0441</td>
+<td align="right">0.000986</td>
+<td align="right">0.00585</td>
+<td align="right">44.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">8.24</td>
+<td align="right">2.3</td>
+<td align="right">0.0515</td>
+<td align="right">0.226</td>
+<td align="right">67.4</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">0.246</td>
+<td align="right">3.1</td>
+<td align="right">0.0693</td>
+<td align="right">0.119</td>
+<td align="right">727.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">0.979</td>
+<td align="right">2.0</td>
+<td align="right">0.0447</td>
+<td align="right">0.0765</td>
+<td align="right">944.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">2.3</td>
+<td align="right">2.39</td>
+<td align="right">0.0535</td>
+<td align="right">0.093</td>
+<td align="right">1490.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.969</td>
+<td align="right">1.72</td>
+<td align="right">0.0384</td>
+<td align="right">0.0921</td>
+<td align="right">279.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.581</td>
+<td align="right">0.64</td>
+<td align="right">0.0143</td>
+<td align="right">0.0467</td>
+<td align="right">147.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">0.758</td>
+<td align="right">0.652</td>
+<td align="right">0.0146</td>
+<td align="right">0.0326</td>
+<td align="right">314.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.738</td>
+<td align="right">0.02</td>
+<td align="right">0.000447</td>
+<td align="right">0.00123</td>
+<td align="right">245.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.506</td>
+<td align="right">0.218</td>
+<td align="right">0.00487</td>
+<td align="right">0.03</td>
+<td align="right">38.2</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-2.44</td>
+<td align="right">1.3</td>
+<td align="right">0.029</td>
+<td align="right">0.213</td>
+<td align="right">42.3</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">0.227</td>
+<td align="right">0.921</td>
+<td align="right">0.0206</td>
+<td align="right">0.078</td>
+<td align="right">82.0</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-1.06</td>
+<td align="right">1.13</td>
+<td align="right">0.0252</td>
+<td align="right">0.0727</td>
+<td align="right">189.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">0.344</td>
+<td align="right">1.19</td>
+<td align="right">0.0265</td>
+<td align="right">0.0756</td>
+<td align="right">331.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-0.108</td>
+<td align="right">0.677</td>
+<td align="right">0.0151</td>
+<td align="right">0.0735</td>
+<td align="right">61.5</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.312</td>
+<td align="right">0.585</td>
+<td align="right">0.0131</td>
+<td align="right">0.0715</td>
+<td align="right">52.1</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-1.07</td>
+<td align="right">0.923</td>
+<td align="right">0.0206</td>
+<td align="right">0.0965</td>
+<td align="right">76.2</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">0.322</td>
+<td align="right">1.06</td>
+<td align="right">0.0237</td>
+<td align="right">0.0986</td>
+<td align="right">86.8</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">0.345</td>
+<td align="right">2.12</td>
+<td align="right">0.0473</td>
+<td align="right">0.1</td>
+<td align="right">614.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">1.38</td>
+<td align="right">2.57</td>
+<td align="right">0.0575</td>
+<td align="right">0.332</td>
+<td align="right">65.7</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">0.149</td>
+<td align="right">0.698</td>
+<td align="right">0.0156</td>
+<td align="right">0.0477</td>
+<td align="right">210.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">2.47</td>
+<td align="right">2.33</td>
+<td align="right">0.0522</td>
+<td align="right">0.244</td>
+<td align="right">64.3</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-4.29</td>
+<td align="right">2.23</td>
+<td align="right">0.0499</td>
+<td align="right">0.121</td>
+<td align="right">367.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">4.09</td>
+<td align="right">2.94</td>
+<td align="right">0.0658</td>
+<td align="right">0.252</td>
+<td align="right">104.0</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">6.13</td>
+<td align="right">2.18</td>
+<td align="right">0.0487</td>
+<td align="right">0.134</td>
+<td align="right">251.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">0.265</td>
+<td align="right">2.1</td>
+<td align="right">0.0471</td>
+<td align="right">0.151</td>
+<td align="right">242.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.536</td>
+<td align="right">0.318</td>
+<td align="right">0.00711</td>
+<td align="right">0.0443</td>
+<td align="right">38.5</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">0.759</td>
+<td align="right">0.492</td>
+<td align="right">0.011</td>
+<td align="right">0.0548</td>
+<td align="right">59.9</td>
+<td align="right">1.02</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.245</td>
+<td align="right">0.177</td>
+<td align="right">0.00395</td>
+<td align="right">0.0165</td>
+<td align="right">90.9</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.0938</td>
+<td align="right">0.1</td>
+<td align="right">0.00224</td>
+<td align="right">0.0113</td>
+<td align="right">55.4</td>
+<td align="right">1.0</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0366</td>
+<td align="right">0.0915</td>
+<td align="right">0.119</td>
+<td align="right">0.141</td>
+<td align="right">0.203</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">2.38</td>
+<td align="right">6.98</td>
+<td align="right">8.34</td>
+<td align="right">9.67</td>
+<td align="right">12.5</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-5.53</td>
+<td align="right">-1.85</td>
+<td align="right">0.107</td>
+<td align="right">2.36</td>
+<td align="right">6.65</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-2.65</td>
+<td align="right">-0.354</td>
+<td align="right">0.904</td>
+<td align="right">2.2</td>
+<td align="right">5.35</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-2.4</td>
+<td align="right">0.69</td>
+<td align="right">2.4</td>
+<td align="right">3.84</td>
+<td align="right">6.99</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-3.95</td>
+<td align="right">-2.09</td>
+<td align="right">-1.09</td>
+<td align="right">0.0518</td>
+<td align="right">2.87</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.743</td>
+<td align="right">0.18</td>
+<td align="right">0.589</td>
+<td align="right">1.02</td>
+<td align="right">1.77</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">0.0328</td>
+<td align="right">0.262</td>
+<td align="right">0.57</td>
+<td align="right">1.09</td>
+<td align="right">2.45</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.686</td>
+<td align="right">0.73</td>
+<td align="right">0.741</td>
+<td align="right">0.751</td>
+<td align="right">0.768</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.175</td>
+<td align="right">0.352</td>
+<td align="right">0.461</td>
+<td align="right">0.59</td>
+<td align="right">0.927</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-6.69</td>
+<td align="right">-2.83</td>
+<td align="right">-2.11</td>
+<td align="right">-1.6</td>
+<td align="right">-0.89</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-1.29</td>
+<td align="right">-0.36</td>
+<td align="right">0.143</td>
+<td align="right">0.705</td>
+<td align="right">2.42</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-3.29</td>
+<td align="right">-1.74</td>
+<td align="right">-1.08</td>
+<td align="right">-0.406</td>
+<td align="right">1.29</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-2.02</td>
+<td align="right">-0.341</td>
+<td align="right">0.347</td>
+<td align="right">1.07</td>
+<td align="right">2.66</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-1.85</td>
+<td align="right">-0.419</td>
+<td align="right">-0.0543</td>
+<td align="right">0.309</td>
+<td align="right">1.04</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-1.71</td>
+<td align="right">-0.572</td>
+<td align="right">-0.242</td>
+<td align="right">0.058</td>
+<td align="right">0.686</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-3.66</td>
+<td align="right">-1.41</td>
+<td align="right">-0.929</td>
+<td align="right">-0.528</td>
+<td align="right">0.205</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">-2.05</td>
+<td align="right">-0.254</td>
+<td align="right">0.352</td>
+<td align="right">0.957</td>
+<td align="right">2.38</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-3.73</td>
+<td align="right">-1.05</td>
+<td align="right">0.341</td>
+<td align="right">1.69</td>
+<td align="right">4.52</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-5.83</td>
+<td align="right">0.152</td>
+<td align="right">1.53</td>
+<td align="right">2.91</td>
+<td align="right">6.1</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-1.27</td>
+<td align="right">-0.252</td>
+<td align="right">0.134</td>
+<td align="right">0.579</td>
+<td align="right">1.52</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-2.72</td>
+<td align="right">1.07</td>
+<td align="right">2.62</td>
+<td align="right">4.0</td>
+<td align="right">6.62</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-8.74</td>
+<td align="right">-5.69</td>
+<td align="right">-4.29</td>
+<td align="right">-2.78</td>
+<td align="right">-0.0176</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-1.14</td>
+<td align="right">1.99</td>
+<td align="right">4.17</td>
+<td align="right">6.15</td>
+<td align="right">9.99</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">1.76</td>
+<td align="right">4.71</td>
+<td align="right">6.1</td>
+<td align="right">7.62</td>
+<td align="right">10.3</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-3.77</td>
+<td align="right">-1.06</td>
+<td align="right">0.153</td>
+<td align="right">1.49</td>
+<td align="right">5.02</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.119</td>
+<td align="right">0.329</td>
+<td align="right">0.453</td>
+<td align="right">0.637</td>
+<td align="right">1.34</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">0.0668</td>
+<td align="right">0.476</td>
+<td align="right">0.688</td>
+<td align="right">0.927</td>
+<td align="right">2.38</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.579</td>
+<td align="right">-0.35</td>
+<td align="right">-0.252</td>
+<td align="right">-0.151</td>
+<td align="right">0.138</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.197</td>
+<td align="right">0.0563</td>
+<td align="right">0.105</td>
+<td align="right">0.153</td>
+<td align="right">0.245</td>
+</tr>
+</tbody>
+</table>
+<h2 id="l1-1-l2-7">L₁ = 1, L₂ = 7<a class="headerlink" href="#l1-1-l2-7" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.104</td>
+<td align="right">0.0197</td>
+<td align="right">0.000441</td>
+<td align="right">0.000482</td>
+<td align="right">1040.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">8.77</td>
+<td align="right">1.55</td>
+<td align="right">0.0346</td>
+<td align="right">0.0345</td>
+<td align="right">1460.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">0.4</td>
+<td align="right">3.14</td>
+<td align="right">0.0703</td>
+<td align="right">0.087</td>
+<td align="right">2070.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-0.365</td>
+<td align="right">1.2</td>
+<td align="right">0.0269</td>
+<td align="right">0.0285</td>
+<td align="right">1740.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">1.22</td>
+<td align="right">1.91</td>
+<td align="right">0.0426</td>
+<td align="right">0.0439</td>
+<td align="right">1750.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.673</td>
+<td align="right">0.894</td>
+<td align="right">0.02</td>
+<td align="right">0.023</td>
+<td align="right">1770.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.751</td>
+<td align="right">0.352</td>
+<td align="right">0.00788</td>
+<td align="right">0.00705</td>
+<td align="right">2010.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">2.33</td>
+<td align="right">0.424</td>
+<td align="right">0.00949</td>
+<td align="right">0.00884</td>
+<td align="right">1220.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.713</td>
+<td align="right">0.0128</td>
+<td align="right">0.000285</td>
+<td align="right">0.000314</td>
+<td align="right">2210.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.917</td>
+<td align="right">0.01</td>
+<td align="right">0.000224</td>
+<td align="right">0.000269</td>
+<td align="right">2360.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-3.51</td>
+<td align="right">1.21</td>
+<td align="right">0.0271</td>
+<td align="right">0.0291</td>
+<td align="right">1500.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">2.95</td>
+<td align="right">1.37</td>
+<td align="right">0.0307</td>
+<td align="right">0.0265</td>
+<td align="right">1950.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-0.535</td>
+<td align="right">1.75</td>
+<td align="right">0.0391</td>
+<td align="right">0.0351</td>
+<td align="right">2620.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-0.821</td>
+<td align="right">1.82</td>
+<td align="right">0.0406</td>
+<td align="right">0.0391</td>
+<td align="right">2320.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-0.28</td>
+<td align="right">1.17</td>
+<td align="right">0.0261</td>
+<td align="right">0.0297</td>
+<td align="right">1650.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-1.49</td>
+<td align="right">1.05</td>
+<td align="right">0.0234</td>
+<td align="right">0.0228</td>
+<td align="right">2130.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-2.18</td>
+<td align="right">1.23</td>
+<td align="right">0.0276</td>
+<td align="right">0.0341</td>
+<td align="right">1290.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">1.19</td>
+<td align="right">1.51</td>
+<td align="right">0.0337</td>
+<td align="right">0.0325</td>
+<td align="right">2440.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-1.37</td>
+<td align="right">2.71</td>
+<td align="right">0.0605</td>
+<td align="right">0.0689</td>
+<td align="right">2180.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-1.06</td>
+<td align="right">2.38</td>
+<td align="right">0.0532</td>
+<td align="right">0.0553</td>
+<td align="right">1840.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">0.533</td>
+<td align="right">0.9</td>
+<td align="right">0.0201</td>
+<td align="right">0.0173</td>
+<td align="right">2050.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">0.492</td>
+<td align="right">2.58</td>
+<td align="right">0.0577</td>
+<td align="right">0.0488</td>
+<td align="right">2130.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-0.802</td>
+<td align="right">2.39</td>
+<td align="right">0.0534</td>
+<td align="right">0.0459</td>
+<td align="right">2140.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">1.76</td>
+<td align="right">3.05</td>
+<td align="right">0.0681</td>
+<td align="right">0.0543</td>
+<td align="right">1640.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">1.85</td>
+<td align="right">2.47</td>
+<td align="right">0.0553</td>
+<td align="right">0.0453</td>
+<td align="right">2700.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">1.06</td>
+<td align="right">2.83</td>
+<td align="right">0.0633</td>
+<td align="right">0.0607</td>
+<td align="right">2070.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">1.39</td>
+<td align="right">0.559</td>
+<td align="right">0.0125</td>
+<td align="right">0.0119</td>
+<td align="right">1520.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">0.133</td>
+<td align="right">0.901</td>
+<td align="right">0.0202</td>
+<td align="right">0.0223</td>
+<td align="right">2000.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.0657</td>
+<td align="right">0.385</td>
+<td align="right">0.0086</td>
+<td align="right">0.00641</td>
+<td align="right">2090.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.0798</td>
+<td align="right">0.156</td>
+<td align="right">0.0035</td>
+<td align="right">0.00311</td>
+<td align="right">2300.0</td>
+<td align="right">1.0</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0728</td>
+<td align="right">0.09</td>
+<td align="right">0.101</td>
+<td align="right">0.115</td>
+<td align="right">0.152</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">5.96</td>
+<td align="right">7.7</td>
+<td align="right">8.66</td>
+<td align="right">9.77</td>
+<td align="right">11.9</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-5.77</td>
+<td align="right">-1.72</td>
+<td align="right">0.417</td>
+<td align="right">2.56</td>
+<td align="right">6.5</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-2.74</td>
+<td align="right">-1.15</td>
+<td align="right">-0.384</td>
+<td align="right">0.429</td>
+<td align="right">1.98</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-2.4</td>
+<td align="right">-0.112</td>
+<td align="right">1.18</td>
+<td align="right">2.52</td>
+<td align="right">4.95</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-2.44</td>
+<td align="right">-1.26</td>
+<td align="right">-0.682</td>
+<td align="right">-0.0941</td>
+<td align="right">1.1</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.0927</td>
+<td align="right">0.52</td>
+<td align="right">0.734</td>
+<td align="right">0.966</td>
+<td align="right">1.49</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">1.56</td>
+<td align="right">2.04</td>
+<td align="right">2.32</td>
+<td align="right">2.61</td>
+<td align="right">3.2</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.688</td>
+<td align="right">0.704</td>
+<td align="right">0.713</td>
+<td align="right">0.722</td>
+<td align="right">0.738</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.896</td>
+<td align="right">0.91</td>
+<td align="right">0.917</td>
+<td align="right">0.924</td>
+<td align="right">0.936</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-5.96</td>
+<td align="right">-4.29</td>
+<td align="right">-3.44</td>
+<td align="right">-2.67</td>
+<td align="right">-1.25</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">0.372</td>
+<td align="right">2.05</td>
+<td align="right">2.88</td>
+<td align="right">3.83</td>
+<td align="right">5.83</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-3.96</td>
+<td align="right">-1.7</td>
+<td align="right">-0.519</td>
+<td align="right">0.673</td>
+<td align="right">2.86</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-4.44</td>
+<td align="right">-2.03</td>
+<td align="right">-0.808</td>
+<td align="right">0.451</td>
+<td align="right">2.59</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-2.52</td>
+<td align="right">-1.05</td>
+<td align="right">-0.266</td>
+<td align="right">0.504</td>
+<td align="right">2.04</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-3.53</td>
+<td align="right">-2.19</td>
+<td align="right">-1.49</td>
+<td align="right">-0.751</td>
+<td align="right">0.506</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-4.74</td>
+<td align="right">-2.95</td>
+<td align="right">-2.11</td>
+<td align="right">-1.34</td>
+<td align="right">0.0364</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">-1.75</td>
+<td align="right">0.171</td>
+<td align="right">1.19</td>
+<td align="right">2.2</td>
+<td align="right">4.13</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-6.68</td>
+<td align="right">-3.23</td>
+<td align="right">-1.31</td>
+<td align="right">0.473</td>
+<td align="right">3.79</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-5.76</td>
+<td align="right">-2.7</td>
+<td align="right">-1.04</td>
+<td align="right">0.52</td>
+<td align="right">3.64</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-1.18</td>
+<td align="right">-0.0583</td>
+<td align="right">0.514</td>
+<td align="right">1.12</td>
+<td align="right">2.37</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-4.63</td>
+<td align="right">-1.27</td>
+<td align="right">0.487</td>
+<td align="right">2.24</td>
+<td align="right">5.49</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-5.33</td>
+<td align="right">-2.44</td>
+<td align="right">-0.855</td>
+<td align="right">0.775</td>
+<td align="right">3.88</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-4.35</td>
+<td align="right">-0.17</td>
+<td align="right">1.79</td>
+<td align="right">3.76</td>
+<td align="right">7.77</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">-3.0</td>
+<td align="right">0.16</td>
+<td align="right">1.89</td>
+<td align="right">3.55</td>
+<td align="right">6.55</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-4.43</td>
+<td align="right">-0.815</td>
+<td align="right">1.04</td>
+<td align="right">2.99</td>
+<td align="right">6.55</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.375</td>
+<td align="right">1.01</td>
+<td align="right">1.35</td>
+<td align="right">1.73</td>
+<td align="right">2.61</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-1.69</td>
+<td align="right">-0.463</td>
+<td align="right">0.134</td>
+<td align="right">0.746</td>
+<td align="right">1.9</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.84</td>
+<td align="right">-0.314</td>
+<td align="right">-0.054</td>
+<td align="right">0.184</td>
+<td align="right">0.682</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.396</td>
+<td align="right">-0.177</td>
+<td align="right">-0.0822</td>
+<td align="right">0.0231</td>
+<td align="right">0.229</td>
+</tr>
+</tbody>
+</table>
+<h2 id="l1-3-l2-1">L₁ = 3, L₂ = 1<a class="headerlink" href="#l1-3-l2-1" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0869</td>
+<td align="right">0.0176</td>
+<td align="right">0.000393</td>
+<td align="right">0.000766</td>
+<td align="right">437.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">11.2</td>
+<td align="right">1.92</td>
+<td align="right">0.0429</td>
+<td align="right">0.0762</td>
+<td align="right">562.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">0.16</td>
+<td align="right">3.18</td>
+<td align="right">0.0711</td>
+<td align="right">0.0827</td>
+<td align="right">1430.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">0.65</td>
+<td align="right">3.06</td>
+<td align="right">0.0684</td>
+<td align="right">0.0759</td>
+<td align="right">1960.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">0.534</td>
+<td align="right">3.07</td>
+<td align="right">0.0686</td>
+<td align="right">0.0697</td>
+<td align="right">1650.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">0.85</td>
+<td align="right">2.92</td>
+<td align="right">0.0653</td>
+<td align="right">0.054</td>
+<td align="right">1440.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">2.52</td>
+<td align="right">1.66</td>
+<td align="right">0.037</td>
+<td align="right">0.0363</td>
+<td align="right">1210.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">0.807</td>
+<td align="right">0.57</td>
+<td align="right">0.0128</td>
+<td align="right">0.0238</td>
+<td align="right">520.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.23</td>
+<td align="right">0.0133</td>
+<td align="right">0.000298</td>
+<td align="right">0.000788</td>
+<td align="right">243.0</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.0669</td>
+<td align="right">0.0279</td>
+<td align="right">0.000623</td>
+<td align="right">0.000474</td>
+<td align="right">1260.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-0.915</td>
+<td align="right">0.321</td>
+<td align="right">0.00718</td>
+<td align="right">0.0112</td>
+<td align="right">1070.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">0.239</td>
+<td align="right">0.382</td>
+<td align="right">0.00854</td>
+<td align="right">0.00689</td>
+<td align="right">2330.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-0.373</td>
+<td align="right">0.483</td>
+<td align="right">0.0108</td>
+<td align="right">0.00748</td>
+<td align="right">2100.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-0.0107</td>
+<td align="right">0.497</td>
+<td align="right">0.0111</td>
+<td align="right">0.00797</td>
+<td align="right">1930.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-0.0175</td>
+<td align="right">0.235</td>
+<td align="right">0.00527</td>
+<td align="right">0.00646</td>
+<td align="right">1360.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.102</td>
+<td align="right">0.197</td>
+<td align="right">0.00441</td>
+<td align="right">0.00438</td>
+<td align="right">2300.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-0.473</td>
+<td align="right">0.288</td>
+<td align="right">0.00644</td>
+<td align="right">0.00715</td>
+<td align="right">1480.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">0.0633</td>
+<td align="right">0.419</td>
+<td align="right">0.00938</td>
+<td align="right">0.00819</td>
+<td align="right">1970.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-0.279</td>
+<td align="right">1.3</td>
+<td align="right">0.0291</td>
+<td align="right">0.0314</td>
+<td align="right">1970.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">1.79</td>
+<td align="right">1.09</td>
+<td align="right">0.0243</td>
+<td align="right">0.0278</td>
+<td align="right">1810.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.0168</td>
+<td align="right">0.273</td>
+<td align="right">0.0061</td>
+<td align="right">0.00616</td>
+<td align="right">2160.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">1.92</td>
+<td align="right">1.15</td>
+<td align="right">0.0258</td>
+<td align="right">0.0348</td>
+<td align="right">1690.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-1.11</td>
+<td align="right">1.62</td>
+<td align="right">0.0363</td>
+<td align="right">0.0469</td>
+<td align="right">1390.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">6.07</td>
+<td align="right">2.57</td>
+<td align="right">0.0575</td>
+<td align="right">0.065</td>
+<td align="right">1790.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">2.67</td>
+<td align="right">1.34</td>
+<td align="right">0.0299</td>
+<td align="right">0.0378</td>
+<td align="right">1200.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">0.00546</td>
+<td align="right">1.1</td>
+<td align="right">0.0246</td>
+<td align="right">0.0303</td>
+<td align="right">1430.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.218</td>
+<td align="right">0.0815</td>
+<td align="right">0.00182</td>
+<td align="right">0.00217</td>
+<td align="right">1420.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">0.365</td>
+<td align="right">0.149</td>
+<td align="right">0.00333</td>
+<td align="right">0.00469</td>
+<td align="right">1330.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.156</td>
+<td align="right">0.0648</td>
+<td align="right">0.00145</td>
+<td align="right">0.00191</td>
+<td align="right">1340.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.0701</td>
+<td align="right">0.0335</td>
+<td align="right">0.000748</td>
+<td align="right">0.000981</td>
+<td align="right">1240.0</td>
+<td align="right">1.0</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0585</td>
+<td align="right">0.0743</td>
+<td align="right">0.0847</td>
+<td align="right">0.0971</td>
+<td align="right">0.128</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">7.76</td>
+<td align="right">9.82</td>
+<td align="right">11.1</td>
+<td align="right">12.5</td>
+<td align="right">15.2</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-6.3</td>
+<td align="right">-1.97</td>
+<td align="right">0.152</td>
+<td align="right">2.3</td>
+<td align="right">6.12</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-5.3</td>
+<td align="right">-1.47</td>
+<td align="right">0.647</td>
+<td align="right">2.7</td>
+<td align="right">6.83</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-5.5</td>
+<td align="right">-1.51</td>
+<td align="right">0.592</td>
+<td align="right">2.6</td>
+<td align="right">6.32</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-4.77</td>
+<td align="right">-1.13</td>
+<td align="right">0.809</td>
+<td align="right">2.9</td>
+<td align="right">6.55</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.315</td>
+<td align="right">1.37</td>
+<td align="right">2.41</td>
+<td align="right">3.49</td>
+<td align="right">6.15</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">0.0395</td>
+<td align="right">0.347</td>
+<td align="right">0.701</td>
+<td align="right">1.15</td>
+<td align="right">2.17</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.196</td>
+<td align="right">0.227</td>
+<td align="right">0.233</td>
+<td align="right">0.237</td>
+<td align="right">0.242</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.0231</td>
+<td align="right">0.0461</td>
+<td align="right">0.0638</td>
+<td align="right">0.0846</td>
+<td align="right">0.128</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-1.66</td>
+<td align="right">-1.11</td>
+<td align="right">-0.869</td>
+<td align="right">-0.685</td>
+<td align="right">-0.396</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-0.5</td>
+<td align="right">-0.0105</td>
+<td align="right">0.228</td>
+<td align="right">0.467</td>
+<td align="right">1.04</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-1.39</td>
+<td align="right">-0.671</td>
+<td align="right">-0.353</td>
+<td align="right">-0.0651</td>
+<td align="right">0.585</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-0.942</td>
+<td align="right">-0.333</td>
+<td align="right">-0.0111</td>
+<td align="right">0.298</td>
+<td align="right">0.971</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-0.469</td>
+<td align="right">-0.172</td>
+<td align="right">-0.0223</td>
+<td align="right">0.139</td>
+<td align="right">0.462</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.511</td>
+<td align="right">-0.232</td>
+<td align="right">-0.0923</td>
+<td align="right">0.0347</td>
+<td align="right">0.271</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-1.1</td>
+<td align="right">-0.644</td>
+<td align="right">-0.451</td>
+<td align="right">-0.271</td>
+<td align="right">0.0107</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">-0.743</td>
+<td align="right">-0.201</td>
+<td align="right">0.0579</td>
+<td align="right">0.34</td>
+<td align="right">0.921</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-2.88</td>
+<td align="right">-1.12</td>
+<td align="right">-0.274</td>
+<td align="right">0.562</td>
+<td align="right">2.34</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-0.234</td>
+<td align="right">1.06</td>
+<td align="right">1.74</td>
+<td align="right">2.46</td>
+<td align="right">4.03</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.577</td>
+<td align="right">-0.186</td>
+<td align="right">-0.0108</td>
+<td align="right">0.161</td>
+<td align="right">0.494</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-0.194</td>
+<td align="right">1.15</td>
+<td align="right">1.91</td>
+<td align="right">2.6</td>
+<td align="right">4.33</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-4.64</td>
+<td align="right">-2.18</td>
+<td align="right">-1.07</td>
+<td align="right">0.00594</td>
+<td align="right">1.92</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">1.01</td>
+<td align="right">4.3</td>
+<td align="right">6.1</td>
+<td align="right">7.84</td>
+<td align="right">11.1</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">0.187</td>
+<td align="right">1.75</td>
+<td align="right">2.59</td>
+<td align="right">3.5</td>
+<td align="right">5.51</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-2.13</td>
+<td align="right">-0.683</td>
+<td align="right">0.024</td>
+<td align="right">0.712</td>
+<td align="right">2.15</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.0712</td>
+<td align="right">0.161</td>
+<td align="right">0.212</td>
+<td align="right">0.27</td>
+<td align="right">0.389</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">0.113</td>
+<td align="right">0.261</td>
+<td align="right">0.352</td>
+<td align="right">0.454</td>
+<td align="right">0.691</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.297</td>
+<td align="right">-0.199</td>
+<td align="right">-0.149</td>
+<td align="right">-0.109</td>
+<td align="right">-0.0489</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.00903</td>
+<td align="right">0.0469</td>
+<td align="right">0.0681</td>
+<td align="right">0.0913</td>
+<td align="right">0.14</td>
+</tr>
+</tbody>
+</table>
+<h2 id="l1-3-l2-3">L₁ = 3, L₂ = 3<a class="headerlink" href="#l1-3-l2-3" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.163</td>
+<td align="right">0.0254</td>
+<td align="right">0.000569</td>
+<td align="right">0.00059</td>
+<td align="right">976.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">9.23</td>
+<td align="right">1.44</td>
+<td align="right">0.0322</td>
+<td align="right">0.0238</td>
+<td align="right">1330.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">0.666</td>
+<td align="right">3.3</td>
+<td align="right">0.0737</td>
+<td align="right">0.0606</td>
+<td align="right">2930.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-0.818</td>
+<td align="right">1.46</td>
+<td align="right">0.0326</td>
+<td align="right">0.0308</td>
+<td align="right">2820.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">1.94</td>
+<td align="right">2.05</td>
+<td align="right">0.0458</td>
+<td align="right">0.0458</td>
+<td align="right">2600.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-1.03</td>
+<td align="right">1.08</td>
+<td align="right">0.0241</td>
+<td align="right">0.0247</td>
+<td align="right">2490.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.402</td>
+<td align="right">0.389</td>
+<td align="right">0.00869</td>
+<td align="right">0.00776</td>
+<td align="right">2530.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">3.25</td>
+<td align="right">0.488</td>
+<td align="right">0.0109</td>
+<td align="right">0.0104</td>
+<td align="right">1040.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.0176</td>
+<td align="right">0.0134</td>
+<td align="right">0.000299</td>
+<td align="right">0.000358</td>
+<td align="right">2350.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.557</td>
+<td align="right">0.0159</td>
+<td align="right">0.000356</td>
+<td align="right">0.000227</td>
+<td align="right">2330.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-1.47</td>
+<td align="right">0.448</td>
+<td align="right">0.01</td>
+<td align="right">0.00838</td>
+<td align="right">2190.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-0.247</td>
+<td align="right">0.478</td>
+<td align="right">0.0107</td>
+<td align="right">0.00647</td>
+<td align="right">2660.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-0.738</td>
+<td align="right">0.704</td>
+<td align="right">0.0157</td>
+<td align="right">0.0105</td>
+<td align="right">2640.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-0.12</td>
+<td align="right">0.735</td>
+<td align="right">0.0164</td>
+<td align="right">0.0108</td>
+<td align="right">2540.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-0.259</td>
+<td align="right">0.381</td>
+<td align="right">0.00851</td>
+<td align="right">0.00694</td>
+<td align="right">3330.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.273</td>
+<td align="right">0.32</td>
+<td align="right">0.00715</td>
+<td align="right">0.00645</td>
+<td align="right">2400.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-0.354</td>
+<td align="right">0.397</td>
+<td align="right">0.00887</td>
+<td align="right">0.00771</td>
+<td align="right">2350.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">0.253</td>
+<td align="right">0.547</td>
+<td align="right">0.0122</td>
+<td align="right">0.0101</td>
+<td align="right">2790.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-0.297</td>
+<td align="right">1.61</td>
+<td align="right">0.0359</td>
+<td align="right">0.0331</td>
+<td align="right">2750.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">1.69</td>
+<td align="right">1.28</td>
+<td align="right">0.0287</td>
+<td align="right">0.0365</td>
+<td align="right">2700.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.178</td>
+<td align="right">0.303</td>
+<td align="right">0.00677</td>
+<td align="right">0.00696</td>
+<td align="right">2550.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">2.46</td>
+<td align="right">1.46</td>
+<td align="right">0.0327</td>
+<td align="right">0.0293</td>
+<td align="right">2560.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">1.25</td>
+<td align="right">1.52</td>
+<td align="right">0.0339</td>
+<td align="right">0.0296</td>
+<td align="right">2810.0</td>
+<td align="right">0.999</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">4.02</td>
+<td align="right">2.49</td>
+<td align="right">0.0556</td>
+<td align="right">0.0498</td>
+<td align="right">3260.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">-0.116</td>
+<td align="right">1.16</td>
+<td align="right">0.026</td>
+<td align="right">0.0235</td>
+<td align="right">3050.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">1.5</td>
+<td align="right">1.61</td>
+<td align="right">0.0361</td>
+<td align="right">0.0292</td>
+<td align="right">2460.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.329</td>
+<td align="right">0.138</td>
+<td align="right">0.00309</td>
+<td align="right">0.00234</td>
+<td align="right">2710.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">0.386</td>
+<td align="right">0.241</td>
+<td align="right">0.00539</td>
+<td align="right">0.00391</td>
+<td align="right">2950.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.188</td>
+<td align="right">0.101</td>
+<td align="right">0.00226</td>
+<td align="right">0.00146</td>
+<td align="right">2890.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.0751</td>
+<td align="right">0.0501</td>
+<td align="right">0.00112</td>
+<td align="right">0.000779</td>
+<td align="right">2560.0</td>
+<td align="right">1.0</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.122</td>
+<td align="right">0.145</td>
+<td align="right">0.16</td>
+<td align="right">0.177</td>
+<td align="right">0.223</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">6.55</td>
+<td align="right">8.23</td>
+<td align="right">9.2</td>
+<td align="right">10.1</td>
+<td align="right">12.2</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-5.74</td>
+<td align="right">-1.56</td>
+<td align="right">0.664</td>
+<td align="right">2.9</td>
+<td align="right">7.24</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-3.62</td>
+<td align="right">-1.85</td>
+<td align="right">-0.808</td>
+<td align="right">0.217</td>
+<td align="right">2.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-1.99</td>
+<td align="right">0.565</td>
+<td align="right">1.95</td>
+<td align="right">3.34</td>
+<td align="right">5.9</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-3.19</td>
+<td align="right">-1.73</td>
+<td align="right">-1.04</td>
+<td align="right">-0.309</td>
+<td align="right">1.11</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.359</td>
+<td align="right">0.152</td>
+<td align="right">0.394</td>
+<td align="right">0.671</td>
+<td align="right">1.21</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">2.34</td>
+<td align="right">2.91</td>
+<td align="right">3.22</td>
+<td align="right">3.57</td>
+<td align="right">4.24</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.000796</td>
+<td align="right">0.00682</td>
+<td align="right">0.0146</td>
+<td align="right">0.0248</td>
+<td align="right">0.05</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.525</td>
+<td align="right">0.547</td>
+<td align="right">0.557</td>
+<td align="right">0.568</td>
+<td align="right">0.588</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-2.38</td>
+<td align="right">-1.78</td>
+<td align="right">-1.44</td>
+<td align="right">-1.14</td>
+<td align="right">-0.684</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-1.18</td>
+<td align="right">-0.569</td>
+<td align="right">-0.228</td>
+<td align="right">0.0672</td>
+<td align="right">0.653</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-2.14</td>
+<td align="right">-1.19</td>
+<td align="right">-0.74</td>
+<td align="right">-0.27</td>
+<td align="right">0.646</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-1.59</td>
+<td align="right">-0.625</td>
+<td align="right">-0.116</td>
+<td align="right">0.383</td>
+<td align="right">1.3</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-1.01</td>
+<td align="right">-0.515</td>
+<td align="right">-0.248</td>
+<td align="right">0.000724</td>
+<td align="right">0.493</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.961</td>
+<td align="right">-0.473</td>
+<td align="right">-0.257</td>
+<td align="right">-0.0551</td>
+<td align="right">0.329</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-1.18</td>
+<td align="right">-0.592</td>
+<td align="right">-0.336</td>
+<td align="right">-0.0883</td>
+<td align="right">0.382</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">-0.8</td>
+<td align="right">-0.113</td>
+<td align="right">0.239</td>
+<td align="right">0.617</td>
+<td align="right">1.36</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-3.4</td>
+<td align="right">-1.38</td>
+<td align="right">-0.296</td>
+<td align="right">0.762</td>
+<td align="right">2.8</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-0.786</td>
+<td align="right">0.836</td>
+<td align="right">1.67</td>
+<td align="right">2.51</td>
+<td align="right">4.18</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.811</td>
+<td align="right">-0.369</td>
+<td align="right">-0.171</td>
+<td align="right">0.0251</td>
+<td align="right">0.405</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-0.239</td>
+<td align="right">1.44</td>
+<td align="right">2.46</td>
+<td align="right">3.47</td>
+<td align="right">5.39</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-1.71</td>
+<td align="right">0.195</td>
+<td align="right">1.27</td>
+<td align="right">2.31</td>
+<td align="right">4.26</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-0.874</td>
+<td align="right">2.31</td>
+<td align="right">4.07</td>
+<td align="right">5.72</td>
+<td align="right">8.8</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">-2.4</td>
+<td align="right">-0.896</td>
+<td align="right">-0.0914</td>
+<td align="right">0.667</td>
+<td align="right">2.19</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-1.72</td>
+<td align="right">0.437</td>
+<td align="right">1.5</td>
+<td align="right">2.58</td>
+<td align="right">4.61</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.0734</td>
+<td align="right">0.237</td>
+<td align="right">0.32</td>
+<td align="right">0.414</td>
+<td align="right">0.626</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-0.0826</td>
+<td align="right">0.223</td>
+<td align="right">0.383</td>
+<td align="right">0.544</td>
+<td align="right">0.866</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.396</td>
+<td align="right">-0.252</td>
+<td align="right">-0.187</td>
+<td align="right">-0.12</td>
+<td align="right">-0.000843</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.0203</td>
+<td align="right">0.0411</td>
+<td align="right">0.0736</td>
+<td align="right">0.108</td>
+<td align="right">0.177</td>
+</tr>
+</tbody>
+</table>
+<h2 id="l1-3-l2-7">L₁ = 3, L₂ = 7<a class="headerlink" href="#l1-3-l2-7" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.167</td>
+<td align="right">0.0275</td>
+<td align="right">0.000615</td>
+<td align="right">0.00109</td>
+<td align="right">783.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">8.23</td>
+<td align="right">1.4</td>
+<td align="right">0.0314</td>
+<td align="right">0.0541</td>
+<td align="right">795.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">1.23</td>
+<td align="right">3.06</td>
+<td align="right">0.0683</td>
+<td align="right">0.0557</td>
+<td align="right">3170.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-1.22</td>
+<td align="right">1.01</td>
+<td align="right">0.0227</td>
+<td align="right">0.0273</td>
+<td align="right">1870.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">1.5</td>
+<td align="right">1.65</td>
+<td align="right">0.0369</td>
+<td align="right">0.0311</td>
+<td align="right">2110.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.252</td>
+<td align="right">0.732</td>
+<td align="right">0.0164</td>
+<td align="right">0.0126</td>
+<td align="right">2300.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.331</td>
+<td align="right">0.26</td>
+<td align="right">0.00582</td>
+<td align="right">0.00623</td>
+<td align="right">2130.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">3.06</td>
+<td align="right">0.49</td>
+<td align="right">0.011</td>
+<td align="right">0.0205</td>
+<td align="right">785.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.0403</td>
+<td align="right">0.0251</td>
+<td align="right">0.000562</td>
+<td align="right">0.000468</td>
+<td align="right">1680.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.832</td>
+<td align="right">0.0126</td>
+<td align="right">0.000282</td>
+<td align="right">0.000364</td>
+<td align="right">2060.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-1.34</td>
+<td align="right">0.604</td>
+<td align="right">0.0135</td>
+<td align="right">0.0141</td>
+<td align="right">1990.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">0.736</td>
+<td align="right">0.574</td>
+<td align="right">0.0128</td>
+<td align="right">0.00813</td>
+<td align="right">2840.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-1.47</td>
+<td align="right">0.963</td>
+<td align="right">0.0215</td>
+<td align="right">0.0234</td>
+<td align="right">2540.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">0.346</td>
+<td align="right">0.993</td>
+<td align="right">0.0222</td>
+<td align="right">0.0231</td>
+<td align="right">2540.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-0.226</td>
+<td align="right">0.644</td>
+<td align="right">0.0144</td>
+<td align="right">0.0177</td>
+<td align="right">2210.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.471</td>
+<td align="right">0.581</td>
+<td align="right">0.013</td>
+<td align="right">0.0125</td>
+<td align="right">2140.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-0.0801</td>
+<td align="right">0.608</td>
+<td align="right">0.0136</td>
+<td align="right">0.0106</td>
+<td align="right">3040.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">1.1</td>
+<td align="right">0.702</td>
+<td align="right">0.0157</td>
+<td align="right">0.0167</td>
+<td align="right">2690.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">6.21</td>
+<td align="right">1.82</td>
+<td align="right">0.0408</td>
+<td align="right">0.0347</td>
+<td align="right">2320.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-1.22</td>
+<td align="right">1.51</td>
+<td align="right">0.0338</td>
+<td align="right">0.0232</td>
+<td align="right">2920.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.643</td>
+<td align="right">0.325</td>
+<td align="right">0.00728</td>
+<td align="right">0.0054</td>
+<td align="right">2660.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">0.246</td>
+<td align="right">1.76</td>
+<td align="right">0.0393</td>
+<td align="right">0.0313</td>
+<td align="right">2440.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">1.25</td>
+<td align="right">1.6</td>
+<td align="right">0.0357</td>
+<td align="right">0.0291</td>
+<td align="right">2440.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-0.192</td>
+<td align="right">2.42</td>
+<td align="right">0.0542</td>
+<td align="right">0.0537</td>
+<td align="right">3030.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">0.165</td>
+<td align="right">1.09</td>
+<td align="right">0.0244</td>
+<td align="right">0.0314</td>
+<td align="right">2400.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">3.23</td>
+<td align="right">2.54</td>
+<td align="right">0.0567</td>
+<td align="right">0.0335</td>
+<td align="right">3500.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.947</td>
+<td align="right">0.333</td>
+<td align="right">0.00746</td>
+<td align="right">0.00574</td>
+<td align="right">2220.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-0.165</td>
+<td align="right">0.534</td>
+<td align="right">0.0119</td>
+<td align="right">0.0135</td>
+<td align="right">2280.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.112</td>
+<td align="right">0.239</td>
+<td align="right">0.00534</td>
+<td align="right">0.00487</td>
+<td align="right">2250.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.0546</td>
+<td align="right">0.0998</td>
+<td align="right">0.00223</td>
+<td align="right">0.00124</td>
+<td align="right">2620.0</td>
+<td align="right">1.0</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.124</td>
+<td align="right">0.147</td>
+<td align="right">0.164</td>
+<td align="right">0.184</td>
+<td align="right">0.229</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">5.7</td>
+<td align="right">7.26</td>
+<td align="right">8.13</td>
+<td align="right">9.16</td>
+<td align="right">11.2</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-4.45</td>
+<td align="right">-0.916</td>
+<td align="right">1.25</td>
+<td align="right">3.27</td>
+<td align="right">7.17</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-3.22</td>
+<td align="right">-1.9</td>
+<td align="right">-1.21</td>
+<td align="right">-0.521</td>
+<td align="right">0.723</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-1.76</td>
+<td align="right">0.403</td>
+<td align="right">1.48</td>
+<td align="right">2.6</td>
+<td align="right">4.79</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-1.74</td>
+<td align="right">-0.742</td>
+<td align="right">-0.238</td>
+<td align="right">0.223</td>
+<td align="right">1.23</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.147</td>
+<td align="right">0.152</td>
+<td align="right">0.318</td>
+<td align="right">0.491</td>
+<td align="right">0.868</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">2.18</td>
+<td align="right">2.72</td>
+<td align="right">3.04</td>
+<td align="right">3.39</td>
+<td align="right">4.01</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.00208</td>
+<td align="right">0.0195</td>
+<td align="right">0.038</td>
+<td align="right">0.0595</td>
+<td align="right">0.0902</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.807</td>
+<td align="right">0.823</td>
+<td align="right">0.832</td>
+<td align="right">0.84</td>
+<td align="right">0.856</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-2.58</td>
+<td align="right">-1.73</td>
+<td align="right">-1.31</td>
+<td align="right">-0.916</td>
+<td align="right">-0.189</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-0.402</td>
+<td align="right">0.369</td>
+<td align="right">0.721</td>
+<td align="right">1.11</td>
+<td align="right">1.94</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-3.47</td>
+<td align="right">-2.08</td>
+<td align="right">-1.46</td>
+<td align="right">-0.813</td>
+<td align="right">0.384</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-1.59</td>
+<td align="right">-0.332</td>
+<td align="right">0.343</td>
+<td align="right">1.02</td>
+<td align="right">2.31</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-1.52</td>
+<td align="right">-0.659</td>
+<td align="right">-0.205</td>
+<td align="right">0.21</td>
+<td align="right">0.98</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-1.62</td>
+<td align="right">-0.846</td>
+<td align="right">-0.479</td>
+<td align="right">-0.0873</td>
+<td align="right">0.651</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-1.28</td>
+<td align="right">-0.482</td>
+<td align="right">-0.0713</td>
+<td align="right">0.317</td>
+<td align="right">1.07</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">-0.203</td>
+<td align="right">0.61</td>
+<td align="right">1.07</td>
+<td align="right">1.57</td>
+<td align="right">2.49</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">2.73</td>
+<td align="right">4.96</td>
+<td align="right">6.18</td>
+<td align="right">7.36</td>
+<td align="right">9.92</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-4.02</td>
+<td align="right">-2.25</td>
+<td align="right">-1.24</td>
+<td align="right">-0.218</td>
+<td align="right">1.83</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-1.33</td>
+<td align="right">-0.855</td>
+<td align="right">-0.633</td>
+<td align="right">-0.417</td>
+<td align="right">-0.0281</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-3.3</td>
+<td align="right">-0.931</td>
+<td align="right">0.249</td>
+<td align="right">1.39</td>
+<td align="right">3.68</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-1.77</td>
+<td align="right">0.165</td>
+<td align="right">1.22</td>
+<td align="right">2.34</td>
+<td align="right">4.42</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-4.87</td>
+<td align="right">-1.84</td>
+<td align="right">-0.19</td>
+<td align="right">1.43</td>
+<td align="right">4.55</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">-2.03</td>
+<td align="right">-0.558</td>
+<td align="right">0.166</td>
+<td align="right">0.856</td>
+<td align="right">2.27</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-1.91</td>
+<td align="right">1.51</td>
+<td align="right">3.24</td>
+<td align="right">4.94</td>
+<td align="right">8.12</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.344</td>
+<td align="right">0.717</td>
+<td align="right">0.935</td>
+<td align="right">1.16</td>
+<td align="right">1.63</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-1.19</td>
+<td align="right">-0.524</td>
+<td align="right">-0.17</td>
+<td align="right">0.177</td>
+<td align="right">0.906</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.609</td>
+<td align="right">-0.261</td>
+<td align="right">-0.105</td>
+<td align="right">0.0448</td>
+<td align="right">0.343</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.14</td>
+<td align="right">-0.0102</td>
+<td align="right">0.0541</td>
+<td align="right">0.117</td>
+<td align="right">0.255</td>
+</tr>
+</tbody>
+</table>
+<h2 id="l1-7-l2-1">L₁ = 7, L₂ = 1<a class="headerlink" href="#l1-7-l2-1" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0728</td>
+<td align="right">0.0167</td>
+<td align="right">0.000373</td>
+<td align="right">0.000824</td>
+<td align="right">414.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">8.25</td>
+<td align="right">1.72</td>
+<td align="right">0.0385</td>
+<td align="right">0.0688</td>
+<td align="right">572.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">0.0816</td>
+<td align="right">3.16</td>
+<td align="right">0.0706</td>
+<td align="right">0.0533</td>
+<td align="right">2840.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">0.369</td>
+<td align="right">3.11</td>
+<td align="right">0.0695</td>
+<td align="right">0.069</td>
+<td align="right">2470.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">0.298</td>
+<td align="right">3.1</td>
+<td align="right">0.0693</td>
+<td align="right">0.0618</td>
+<td align="right">2330.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.159</td>
+<td align="right">2.56</td>
+<td align="right">0.0573</td>
+<td align="right">0.0641</td>
+<td align="right">2300.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">1.0</td>
+<td align="right">1.11</td>
+<td align="right">0.0248</td>
+<td align="right">0.0263</td>
+<td align="right">2150.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">2.37</td>
+<td align="right">0.529</td>
+<td align="right">0.0118</td>
+<td align="right">0.0176</td>
+<td align="right">730.0</td>
+<td align="right">1.01</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.0698</td>
+<td align="right">0.033</td>
+<td align="right">0.000738</td>
+<td align="right">0.00142</td>
+<td align="right">649.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.0933</td>
+<td align="right">0.0332</td>
+<td align="right">0.000743</td>
+<td align="right">0.00118</td>
+<td align="right">896.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-1.17</td>
+<td align="right">0.348</td>
+<td align="right">0.00778</td>
+<td align="right">0.0114</td>
+<td align="right">740.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">0.00193</td>
+<td align="right">0.29</td>
+<td align="right">0.00648</td>
+<td align="right">0.00666</td>
+<td align="right">2220.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-0.34</td>
+<td align="right">0.38</td>
+<td align="right">0.0085</td>
+<td align="right">0.0102</td>
+<td align="right">2160.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">0.0138</td>
+<td align="right">0.394</td>
+<td align="right">0.00882</td>
+<td align="right">0.00846</td>
+<td align="right">2060.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-0.192</td>
+<td align="right">0.176</td>
+<td align="right">0.00393</td>
+<td align="right">0.00417</td>
+<td align="right">1560.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.139</td>
+<td align="right">0.156</td>
+<td align="right">0.00348</td>
+<td align="right">0.00237</td>
+<td align="right">2030.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-0.6</td>
+<td align="right">0.243</td>
+<td align="right">0.00543</td>
+<td align="right">0.00817</td>
+<td align="right">852.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">0.119</td>
+<td align="right">0.336</td>
+<td align="right">0.00751</td>
+<td align="right">0.00705</td>
+<td align="right">2590.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-0.382</td>
+<td align="right">1.07</td>
+<td align="right">0.0239</td>
+<td align="right">0.0208</td>
+<td align="right">1970.0</td>
+<td align="right">0.999</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">0.285</td>
+<td align="right">0.823</td>
+<td align="right">0.0184</td>
+<td align="right">0.0158</td>
+<td align="right">2390.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">0.0582</td>
+<td align="right">0.214</td>
+<td align="right">0.00478</td>
+<td align="right">0.00499</td>
+<td align="right">2200.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">2.49</td>
+<td align="right">1.0</td>
+<td align="right">0.0224</td>
+<td align="right">0.0249</td>
+<td align="right">1470.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">1.49</td>
+<td align="right">1.4</td>
+<td align="right">0.0313</td>
+<td align="right">0.0309</td>
+<td align="right">1750.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">8.64</td>
+<td align="right">2.33</td>
+<td align="right">0.0521</td>
+<td align="right">0.0481</td>
+<td align="right">2580.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">1.2</td>
+<td align="right">1.07</td>
+<td align="right">0.0239</td>
+<td align="right">0.0221</td>
+<td align="right">1760.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">0.334</td>
+<td align="right">0.896</td>
+<td align="right">0.02</td>
+<td align="right">0.0169</td>
+<td align="right">2340.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.281</td>
+<td align="right">0.0875</td>
+<td align="right">0.00196</td>
+<td align="right">0.00275</td>
+<td align="right">738.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">0.396</td>
+<td align="right">0.134</td>
+<td align="right">0.003</td>
+<td align="right">0.00394</td>
+<td align="right">1110.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.155</td>
+<td align="right">0.0583</td>
+<td align="right">0.0013</td>
+<td align="right">0.00168</td>
+<td align="right">1050.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.0706</td>
+<td align="right">0.03</td>
+<td align="right">0.000671</td>
+<td align="right">0.000877</td>
+<td align="right">1250.0</td>
+<td align="right">1.0</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0472</td>
+<td align="right">0.0608</td>
+<td align="right">0.0703</td>
+<td align="right">0.0823</td>
+<td align="right">0.111</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">5.21</td>
+<td align="right">6.99</td>
+<td align="right">8.14</td>
+<td align="right">9.37</td>
+<td align="right">11.9</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-5.83</td>
+<td align="right">-2.14</td>
+<td align="right">0.00505</td>
+<td align="right">2.23</td>
+<td align="right">6.23</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-5.74</td>
+<td align="right">-1.71</td>
+<td align="right">0.355</td>
+<td align="right">2.48</td>
+<td align="right">6.48</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-5.75</td>
+<td align="right">-1.83</td>
+<td align="right">0.21</td>
+<td align="right">2.43</td>
+<td align="right">6.08</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-5.33</td>
+<td align="right">-1.84</td>
+<td align="right">-0.0771</td>
+<td align="right">1.58</td>
+<td align="right">4.86</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-1.0</td>
+<td align="right">0.23</td>
+<td align="right">0.947</td>
+<td align="right">1.69</td>
+<td align="right">3.34</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">1.42</td>
+<td align="right">1.99</td>
+<td align="right">2.35</td>
+<td align="right">2.71</td>
+<td align="right">3.51</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.00518</td>
+<td align="right">0.0445</td>
+<td align="right">0.0748</td>
+<td align="right">0.0954</td>
+<td align="right">0.122</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.0362</td>
+<td align="right">0.0702</td>
+<td align="right">0.0895</td>
+<td align="right">0.112</td>
+<td align="right">0.171</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-1.96</td>
+<td align="right">-1.37</td>
+<td align="right">-1.12</td>
+<td align="right">-0.929</td>
+<td align="right">-0.609</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-0.579</td>
+<td align="right">-0.186</td>
+<td align="right">0.00493</td>
+<td align="right">0.191</td>
+<td align="right">0.569</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-1.13</td>
+<td align="right">-0.583</td>
+<td align="right">-0.32</td>
+<td align="right">-0.0895</td>
+<td align="right">0.377</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-0.779</td>
+<td align="right">-0.249</td>
+<td align="right">0.00973</td>
+<td align="right">0.27</td>
+<td align="right">0.806</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-0.56</td>
+<td align="right">-0.298</td>
+<td align="right">-0.181</td>
+<td align="right">-0.0718</td>
+<td align="right">0.132</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.47</td>
+<td align="right">-0.232</td>
+<td align="right">-0.13</td>
+<td align="right">-0.0412</td>
+<td align="right">0.159</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-1.12</td>
+<td align="right">-0.759</td>
+<td align="right">-0.572</td>
+<td align="right">-0.423</td>
+<td align="right">-0.18</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">-0.559</td>
+<td align="right">-0.0996</td>
+<td align="right">0.115</td>
+<td align="right">0.342</td>
+<td align="right">0.783</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-2.55</td>
+<td align="right">-1.09</td>
+<td align="right">-0.372</td>
+<td align="right">0.337</td>
+<td align="right">1.68</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-1.33</td>
+<td align="right">-0.252</td>
+<td align="right">0.272</td>
+<td align="right">0.815</td>
+<td align="right">1.92</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.367</td>
+<td align="right">-0.0798</td>
+<td align="right">0.0616</td>
+<td align="right">0.195</td>
+<td align="right">0.474</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">0.782</td>
+<td align="right">1.79</td>
+<td align="right">2.41</td>
+<td align="right">3.13</td>
+<td align="right">4.61</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-1.44</td>
+<td align="right">0.597</td>
+<td align="right">1.57</td>
+<td align="right">2.43</td>
+<td align="right">4.02</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">3.95</td>
+<td align="right">7.11</td>
+<td align="right">8.65</td>
+<td align="right">10.2</td>
+<td align="right">13.2</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">-0.73</td>
+<td align="right">0.464</td>
+<td align="right">1.14</td>
+<td align="right">1.86</td>
+<td align="right">3.51</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-1.54</td>
+<td align="right">-0.239</td>
+<td align="right">0.357</td>
+<td align="right">0.918</td>
+<td align="right">2.06</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.14</td>
+<td align="right">0.218</td>
+<td align="right">0.273</td>
+<td align="right">0.333</td>
+<td align="right">0.482</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">0.167</td>
+<td align="right">0.303</td>
+<td align="right">0.382</td>
+<td align="right">0.48</td>
+<td align="right">0.691</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.283</td>
+<td align="right">-0.194</td>
+<td align="right">-0.151</td>
+<td align="right">-0.113</td>
+<td align="right">-0.0581</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.019</td>
+<td align="right">0.0487</td>
+<td align="right">0.0681</td>
+<td align="right">0.0891</td>
+<td align="right">0.136</td>
+</tr>
+</tbody>
+</table>
+<h2 id="l1-7-l2-3">L₁ = 7, L₂ = 3<a class="headerlink" href="#l1-7-l2-3" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0881</td>
+<td align="right">0.014</td>
+<td align="right">0.000313</td>
+<td align="right">0.000405</td>
+<td align="right">907.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">8.6</td>
+<td align="right">1.39</td>
+<td align="right">0.0311</td>
+<td align="right">0.0358</td>
+<td align="right">1080.0</td>
+<td align="right">0.999</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">0.218</td>
+<td align="right">3.07</td>
+<td align="right">0.0687</td>
+<td align="right">0.0833</td>
+<td align="right">1840.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-0.244</td>
+<td align="right">1.11</td>
+<td align="right">0.0247</td>
+<td align="right">0.0246</td>
+<td align="right">1790.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-0.363</td>
+<td align="right">1.73</td>
+<td align="right">0.0387</td>
+<td align="right">0.0415</td>
+<td align="right">1870.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.348</td>
+<td align="right">0.826</td>
+<td align="right">0.0185</td>
+<td align="right">0.018</td>
+<td align="right">2000.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.41</td>
+<td align="right">0.289</td>
+<td align="right">0.00647</td>
+<td align="right">0.0083</td>
+<td align="right">2090.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">3.19</td>
+<td align="right">0.498</td>
+<td align="right">0.0111</td>
+<td align="right">0.0138</td>
+<td align="right">912.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.0123</td>
+<td align="right">0.00903</td>
+<td align="right">0.000202</td>
+<td align="right">0.000211</td>
+<td align="right">1440.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.738</td>
+<td align="right">0.0139</td>
+<td align="right">0.000311</td>
+<td align="right">0.000351</td>
+<td align="right">2830.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-1.79</td>
+<td align="right">0.572</td>
+<td align="right">0.0128</td>
+<td align="right">0.00956</td>
+<td align="right">1620.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-0.0229</td>
+<td align="right">0.563</td>
+<td align="right">0.0126</td>
+<td align="right">0.0138</td>
+<td align="right">2210.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-0.911</td>
+<td align="right">0.876</td>
+<td align="right">0.0196</td>
+<td align="right">0.0132</td>
+<td align="right">2170.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-0.0547</td>
+<td align="right">0.929</td>
+<td align="right">0.0208</td>
+<td align="right">0.0121</td>
+<td align="right">2060.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-0.452</td>
+<td align="right">0.562</td>
+<td align="right">0.0126</td>
+<td align="right">0.0133</td>
+<td align="right">1480.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-0.573</td>
+<td align="right">0.479</td>
+<td align="right">0.0107</td>
+<td align="right">0.0128</td>
+<td align="right">1660.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-0.382</td>
+<td align="right">0.522</td>
+<td align="right">0.0117</td>
+<td align="right">0.0115</td>
+<td align="right">2050.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">0.671</td>
+<td align="right">0.714</td>
+<td align="right">0.016</td>
+<td align="right">0.0134</td>
+<td align="right">2060.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">0.585</td>
+<td align="right">1.78</td>
+<td align="right">0.0397</td>
+<td align="right">0.0395</td>
+<td align="right">1690.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-1.79</td>
+<td align="right">1.44</td>
+<td align="right">0.0321</td>
+<td align="right">0.0395</td>
+<td align="right">1950.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.101</td>
+<td align="right">0.323</td>
+<td align="right">0.00723</td>
+<td align="right">0.00647</td>
+<td align="right">2030.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">3.92</td>
+<td align="right">1.74</td>
+<td align="right">0.039</td>
+<td align="right">0.0417</td>
+<td align="right">2060.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">1.95</td>
+<td align="right">1.61</td>
+<td align="right">0.036</td>
+<td align="right">0.043</td>
+<td align="right">1790.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">2.85</td>
+<td align="right">2.5</td>
+<td align="right">0.0558</td>
+<td align="right">0.0606</td>
+<td align="right">2020.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">0.364</td>
+<td align="right">1.13</td>
+<td align="right">0.0253</td>
+<td align="right">0.0256</td>
+<td align="right">2220.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">2.52</td>
+<td align="right">2.2</td>
+<td align="right">0.0493</td>
+<td align="right">0.0455</td>
+<td align="right">1830.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.736</td>
+<td align="right">0.241</td>
+<td align="right">0.00539</td>
+<td align="right">0.00499</td>
+<td align="right">2000.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">0.409</td>
+<td align="right">0.402</td>
+<td align="right">0.00898</td>
+<td align="right">0.00841</td>
+<td align="right">2030.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.207</td>
+<td align="right">0.167</td>
+<td align="right">0.00372</td>
+<td align="right">0.00353</td>
+<td align="right">1960.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.0677</td>
+<td align="right">0.0729</td>
+<td align="right">0.00163</td>
+<td align="right">0.00173</td>
+<td align="right">1830.0</td>
+<td align="right">1.0</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0642</td>
+<td align="right">0.0779</td>
+<td align="right">0.0868</td>
+<td align="right">0.0966</td>
+<td align="right">0.12</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">6.03</td>
+<td align="right">7.65</td>
+<td align="right">8.49</td>
+<td align="right">9.52</td>
+<td align="right">11.4</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-5.77</td>
+<td align="right">-1.83</td>
+<td align="right">0.261</td>
+<td align="right">2.36</td>
+<td align="right">6.02</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-2.37</td>
+<td align="right">-0.998</td>
+<td align="right">-0.266</td>
+<td align="right">0.509</td>
+<td align="right">2.01</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-3.79</td>
+<td align="right">-1.54</td>
+<td align="right">-0.397</td>
+<td align="right">0.845</td>
+<td align="right">2.87</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-1.95</td>
+<td align="right">-0.895</td>
+<td align="right">-0.345</td>
+<td align="right">0.17</td>
+<td align="right">1.33</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.15</td>
+<td align="right">0.212</td>
+<td align="right">0.399</td>
+<td align="right">0.6</td>
+<td align="right">0.996</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">2.28</td>
+<td align="right">2.84</td>
+<td align="right">3.15</td>
+<td align="right">3.51</td>
+<td align="right">4.27</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.000396</td>
+<td align="right">0.00502</td>
+<td align="right">0.0106</td>
+<td align="right">0.018</td>
+<td align="right">0.0333</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.71</td>
+<td align="right">0.728</td>
+<td align="right">0.737</td>
+<td align="right">0.747</td>
+<td align="right">0.765</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-3.0</td>
+<td align="right">-2.16</td>
+<td align="right">-1.75</td>
+<td align="right">-1.4</td>
+<td align="right">-0.761</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-1.16</td>
+<td align="right">-0.385</td>
+<td align="right">-0.0234</td>
+<td align="right">0.36</td>
+<td align="right">1.03</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-2.62</td>
+<td align="right">-1.51</td>
+<td align="right">-0.902</td>
+<td align="right">-0.3</td>
+<td align="right">0.763</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-1.93</td>
+<td align="right">-0.631</td>
+<td align="right">-0.0647</td>
+<td align="right">0.567</td>
+<td align="right">1.78</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-1.61</td>
+<td align="right">-0.799</td>
+<td align="right">-0.451</td>
+<td align="right">-0.0914</td>
+<td align="right">0.636</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-1.55</td>
+<td align="right">-0.873</td>
+<td align="right">-0.554</td>
+<td align="right">-0.249</td>
+<td align="right">0.298</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-1.43</td>
+<td align="right">-0.721</td>
+<td align="right">-0.381</td>
+<td align="right">-0.0303</td>
+<td align="right">0.688</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">-0.692</td>
+<td align="right">0.191</td>
+<td align="right">0.669</td>
+<td align="right">1.13</td>
+<td align="right">2.11</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">-2.87</td>
+<td align="right">-0.591</td>
+<td align="right">0.561</td>
+<td align="right">1.8</td>
+<td align="right">4.02</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-4.59</td>
+<td align="right">-2.76</td>
+<td align="right">-1.79</td>
+<td align="right">-0.808</td>
+<td align="right">0.961</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.77</td>
+<td align="right">-0.315</td>
+<td align="right">-0.0967</td>
+<td align="right">0.119</td>
+<td align="right">0.519</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">0.535</td>
+<td align="right">2.75</td>
+<td align="right">3.91</td>
+<td align="right">5.1</td>
+<td align="right">7.31</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-1.35</td>
+<td align="right">0.872</td>
+<td align="right">1.95</td>
+<td align="right">3.07</td>
+<td align="right">4.95</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-2.15</td>
+<td align="right">1.2</td>
+<td align="right">2.82</td>
+<td align="right">4.51</td>
+<td align="right">7.77</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">-1.87</td>
+<td align="right">-0.391</td>
+<td align="right">0.373</td>
+<td align="right">1.11</td>
+<td align="right">2.57</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-1.7</td>
+<td align="right">1.05</td>
+<td align="right">2.48</td>
+<td align="right">3.97</td>
+<td align="right">6.86</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.306</td>
+<td align="right">0.569</td>
+<td align="right">0.717</td>
+<td align="right">0.889</td>
+<td align="right">1.24</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-0.351</td>
+<td align="right">0.143</td>
+<td align="right">0.402</td>
+<td align="right">0.662</td>
+<td align="right">1.22</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.536</td>
+<td align="right">-0.312</td>
+<td align="right">-0.205</td>
+<td align="right">-0.0934</td>
+<td align="right">0.118</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.0734</td>
+<td align="right">0.0181</td>
+<td align="right">0.0673</td>
+<td align="right">0.116</td>
+<td align="right">0.216</td>
+</tr>
+</tbody>
+</table>
+<h2 id="l1-7-l2-7">L₁ = 7, L₂ = 7<a class="headerlink" href="#l1-7-l2-7" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">naive_se</th>
+<th align="right">mcse</th>
+<th align="right">ess</th>
+<th align="right">r_hat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.127</td>
+<td align="right">0.0233</td>
+<td align="right">0.000522</td>
+<td align="right">0.000711</td>
+<td align="right">734.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">7.85</td>
+<td align="right">1.46</td>
+<td align="right">0.0326</td>
+<td align="right">0.0386</td>
+<td align="right">987.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">0.736</td>
+<td align="right">2.97</td>
+<td align="right">0.0665</td>
+<td align="right">0.0491</td>
+<td align="right">2800.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">0.00781</td>
+<td align="right">0.98</td>
+<td align="right">0.0219</td>
+<td align="right">0.0229</td>
+<td align="right">2420.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">1.04</td>
+<td align="right">1.54</td>
+<td align="right">0.0345</td>
+<td align="right">0.0391</td>
+<td align="right">2400.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.772</td>
+<td align="right">0.705</td>
+<td align="right">0.0158</td>
+<td align="right">0.0155</td>
+<td align="right">2560.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.53</td>
+<td align="right">0.263</td>
+<td align="right">0.00587</td>
+<td align="right">0.00469</td>
+<td align="right">2770.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">2.51</td>
+<td align="right">0.449</td>
+<td align="right">0.01</td>
+<td align="right">0.0131</td>
+<td align="right">835.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.081</td>
+<td align="right">0.0101</td>
+<td align="right">0.000225</td>
+<td align="right">0.000244</td>
+<td align="right">2140.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.911</td>
+<td align="right">0.00845</td>
+<td align="right">0.000189</td>
+<td align="right">0.000225</td>
+<td align="right">2100.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-0.556</td>
+<td align="right">0.551</td>
+<td align="right">0.0123</td>
+<td align="right">0.00821</td>
+<td align="right">2940.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">0.955</td>
+<td align="right">0.687</td>
+<td align="right">0.0154</td>
+<td align="right">0.0127</td>
+<td align="right">3000.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">0.52</td>
+<td align="right">0.987</td>
+<td align="right">0.0221</td>
+<td align="right">0.0189</td>
+<td align="right">3030.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-0.228</td>
+<td align="right">1.03</td>
+<td align="right">0.023</td>
+<td align="right">0.0198</td>
+<td align="right">3480.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">0.123</td>
+<td align="right">0.747</td>
+<td align="right">0.0167</td>
+<td align="right">0.0119</td>
+<td align="right">3120.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-1.32</td>
+<td align="right">0.759</td>
+<td align="right">0.017</td>
+<td align="right">0.0154</td>
+<td align="right">2510.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-0.0478</td>
+<td align="right">0.61</td>
+<td align="right">0.0136</td>
+<td align="right">0.0103</td>
+<td align="right">3100.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">0.728</td>
+<td align="right">0.786</td>
+<td align="right">0.0176</td>
+<td align="right">0.0158</td>
+<td align="right">3140.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">5.62</td>
+<td align="right">1.91</td>
+<td align="right">0.0427</td>
+<td align="right">0.0287</td>
+<td align="right">2940.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-5.41</td>
+<td align="right">1.57</td>
+<td align="right">0.0352</td>
+<td align="right">0.0263</td>
+<td align="right">2940.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.21</td>
+<td align="right">0.306</td>
+<td align="right">0.00684</td>
+<td align="right">0.00687</td>
+<td align="right">2940.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">3.05</td>
+<td align="right">1.81</td>
+<td align="right">0.0405</td>
+<td align="right">0.0321</td>
+<td align="right">3030.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">1.69</td>
+<td align="right">1.57</td>
+<td align="right">0.0352</td>
+<td align="right">0.0286</td>
+<td align="right">3020.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">0.79</td>
+<td align="right">2.33</td>
+<td align="right">0.0521</td>
+<td align="right">0.0453</td>
+<td align="right">2790.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">0.313</td>
+<td align="right">0.961</td>
+<td align="right">0.0215</td>
+<td align="right">0.0206</td>
+<td align="right">2790.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">3.28</td>
+<td align="right">2.87</td>
+<td align="right">0.0641</td>
+<td align="right">0.0608</td>
+<td align="right">3010.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">1.33</td>
+<td align="right">0.522</td>
+<td align="right">0.0117</td>
+<td align="right">0.0104</td>
+<td align="right">2820.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-0.517</td>
+<td align="right">0.822</td>
+<td align="right">0.0184</td>
+<td align="right">0.0172</td>
+<td align="right">2730.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">0.0748</td>
+<td align="right">0.338</td>
+<td align="right">0.00757</td>
+<td align="right">0.0058</td>
+<td align="right">2960.0</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.0575</td>
+<td align="right">0.133</td>
+<td align="right">0.00297</td>
+<td align="right">0.00266</td>
+<td align="right">2780.0</td>
+<td align="right">1.0</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th align="right">parameters</th>
+<th align="right">2.5%</th>
+<th align="right">25.0%</th>
+<th align="right">50.0%</th>
+<th align="right">75.0%</th>
+<th align="right">97.5%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">γ</td>
+<td align="right">0.0899</td>
+<td align="right">0.11</td>
+<td align="right">0.124</td>
+<td align="right">0.141</td>
+<td align="right">0.179</td>
+</tr>
+<tr>
+<td align="right">σR0</td>
+<td align="right">5.3</td>
+<td align="right">6.81</td>
+<td align="right">7.78</td>
+<td align="right">8.79</td>
+<td align="right">10.9</td>
+</tr>
+<tr>
+<td align="right">α0(constant)</td>
+<td align="right">-5.04</td>
+<td align="right">-1.3</td>
+<td align="right">0.747</td>
+<td align="right">2.83</td>
+<td align="right">6.46</td>
+</tr>
+<tr>
+<td align="right">α0(logpopdens)</td>
+<td align="right">-1.92</td>
+<td align="right">-0.639</td>
+<td align="right">0.0109</td>
+<td align="right">0.627</td>
+<td align="right">1.98</td>
+</tr>
+<tr>
+<td align="right">α0(Percent Unemployed 2018 )</td>
+<td align="right">-1.86</td>
+<td align="right">-0.00685</td>
+<td align="right">0.992</td>
+<td align="right">2.09</td>
+<td align="right">4.08</td>
+</tr>
+<tr>
+<td align="right">α0(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-2.23</td>
+<td align="right">-1.25</td>
+<td align="right">-0.749</td>
+<td align="right">-0.279</td>
+<td align="right">0.612</td>
+</tr>
+<tr>
+<td align="right">α0(Percent at risk for serious illness due to COVID)</td>
+<td align="right">0.0392</td>
+<td align="right">0.357</td>
+<td align="right">0.517</td>
+<td align="right">0.693</td>
+<td align="right">1.07</td>
+</tr>
+<tr>
+<td align="right">σR</td>
+<td align="right">1.73</td>
+<td align="right">2.2</td>
+<td align="right">2.48</td>
+<td align="right">2.82</td>
+<td align="right">3.46</td>
+</tr>
+<tr>
+<td align="right">σk</td>
+<td align="right">0.0596</td>
+<td align="right">0.0748</td>
+<td align="right">0.0817</td>
+<td align="right">0.088</td>
+<td align="right">0.0988</td>
+</tr>
+<tr>
+<td align="right">ρ</td>
+<td align="right">0.894</td>
+<td align="right">0.905</td>
+<td align="right">0.911</td>
+<td align="right">0.916</td>
+<td align="right">0.927</td>
+</tr>
+<tr>
+<td align="right">α(Stay at home shelter in place)</td>
+<td align="right">-1.69</td>
+<td align="right">-0.899</td>
+<td align="right">-0.549</td>
+<td align="right">-0.18</td>
+<td align="right">0.47</td>
+</tr>
+<tr>
+<td align="right">α(Date closed K 12 schools)</td>
+<td align="right">-0.308</td>
+<td align="right">0.489</td>
+<td align="right">0.945</td>
+<td align="right">1.4</td>
+<td align="right">2.35</td>
+</tr>
+<tr>
+<td align="right">α(Closed gyms)</td>
+<td align="right">-1.41</td>
+<td align="right">-0.112</td>
+<td align="right">0.513</td>
+<td align="right">1.12</td>
+<td align="right">2.55</td>
+</tr>
+<tr>
+<td align="right">α(Closed movie theaters)</td>
+<td align="right">-2.31</td>
+<td align="right">-0.902</td>
+<td align="right">-0.223</td>
+<td align="right">0.455</td>
+<td align="right">1.84</td>
+</tr>
+<tr>
+<td align="right">α(Closed day cares)</td>
+<td align="right">-1.3</td>
+<td align="right">-0.36</td>
+<td align="right">0.113</td>
+<td align="right">0.61</td>
+<td align="right">1.63</td>
+</tr>
+<tr>
+<td align="right">α(Date banned visitors to nursing homes)</td>
+<td align="right">-2.86</td>
+<td align="right">-1.78</td>
+<td align="right">-1.3</td>
+<td align="right">-0.809</td>
+<td align="right">0.0802</td>
+</tr>
+<tr>
+<td align="right">α(Closed non essential businesses)</td>
+<td align="right">-1.32</td>
+<td align="right">-0.452</td>
+<td align="right">-0.0337</td>
+<td align="right">0.36</td>
+<td align="right">1.13</td>
+</tr>
+<tr>
+<td align="right">α(Closed restaurants except take out)</td>
+<td align="right">-0.727</td>
+<td align="right">0.192</td>
+<td align="right">0.726</td>
+<td align="right">1.25</td>
+<td align="right">2.33</td>
+</tr>
+<tr>
+<td align="right">α(retail and recreation percent change from baseline)</td>
+<td align="right">1.94</td>
+<td align="right">4.38</td>
+<td align="right">5.61</td>
+<td align="right">6.86</td>
+<td align="right">9.43</td>
+</tr>
+<tr>
+<td align="right">α(grocery and pharmacy percent change from baseline)</td>
+<td align="right">-8.57</td>
+<td align="right">-6.45</td>
+<td align="right">-5.39</td>
+<td align="right">-4.34</td>
+<td align="right">-2.48</td>
+</tr>
+<tr>
+<td align="right">α(parks percent change from baseline)</td>
+<td align="right">-0.842</td>
+<td align="right">-0.409</td>
+<td align="right">-0.205</td>
+<td align="right">-0.014</td>
+<td align="right">0.393</td>
+</tr>
+<tr>
+<td align="right">α(transit stations percent change from baseline)</td>
+<td align="right">-0.483</td>
+<td align="right">1.83</td>
+<td align="right">3.08</td>
+<td align="right">4.25</td>
+<td align="right">6.6</td>
+</tr>
+<tr>
+<td align="right">α(workplaces percent change from baseline)</td>
+<td align="right">-1.52</td>
+<td align="right">0.7</td>
+<td align="right">1.71</td>
+<td align="right">2.71</td>
+<td align="right">4.73</td>
+</tr>
+<tr>
+<td align="right">α(residential percent change from baseline)</td>
+<td align="right">-3.76</td>
+<td align="right">-0.743</td>
+<td align="right">0.777</td>
+<td align="right">2.38</td>
+<td align="right">5.33</td>
+</tr>
+<tr>
+<td align="right">α(percentchangebusinesses)</td>
+<td align="right">-1.51</td>
+<td align="right">-0.332</td>
+<td align="right">0.258</td>
+<td align="right">0.952</td>
+<td align="right">2.28</td>
+</tr>
+<tr>
+<td align="right">α(constant)</td>
+<td align="right">-2.27</td>
+<td align="right">1.36</td>
+<td align="right">3.4</td>
+<td align="right">5.27</td>
+<td align="right">8.53</td>
+</tr>
+<tr>
+<td align="right">α(logpopdens)</td>
+<td align="right">0.411</td>
+<td align="right">0.965</td>
+<td align="right">1.3</td>
+<td align="right">1.67</td>
+<td align="right">2.45</td>
+</tr>
+<tr>
+<td align="right">α(Percent Unemployed 2018 )</td>
+<td align="right">-2.06</td>
+<td align="right">-1.07</td>
+<td align="right">-0.529</td>
+<td align="right">0.0268</td>
+<td align="right">1.05</td>
+</tr>
+<tr>
+<td align="right">α(Percent living under the federal poverty line 2018 )</td>
+<td align="right">-0.589</td>
+<td align="right">-0.141</td>
+<td align="right">0.0723</td>
+<td align="right">0.294</td>
+<td align="right">0.768</td>
+</tr>
+<tr>
+<td align="right">α(Percent at risk for serious illness due to COVID)</td>
+<td align="right">-0.318</td>
+<td align="right">-0.144</td>
+<td align="right">-0.0618</td>
+<td align="right">0.0276</td>
+<td align="right">0.206</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="" src="../figures/rt_longdiff_2_1.png" /> <img alt="" src="../figures/rt_longdiff_2_2.png" />
+<img alt="" src="../figures/rt_longdiff_2_3.png" /> <img alt="" src="../figures/rt_longdiff_2_4.png" />
+<img alt="" src="../figures/rt_longdiff_2_5.png" /> <img alt="" src="../figures/rt_longdiff_2_6.png" />
+<img alt="" src="../figures/rt_longdiff_2_7.png" /> <img alt="" src="../figures/rt_longdiff_2_8.png" />
+<img alt="" src="../figures/rt_longdiff_2_9.png" /> <img alt="" src="../figures/rt_longdiff_2_10.png" />
+<img alt="" src="../figures/rt_longdiff_2_11.png" /> <img alt="" src="../figures/rt_longdiff_2_12.png" />
+<img alt="" src="../figures/rt_longdiff_2_13.png" /> <img alt="" src="../figures/rt_longdiff_2_14.png" />
+<img alt="" src="../figures/rt_longdiff_2_15.png" /> <img alt="" src="../figures/rt_longdiff_2_16.png" />
+<img alt="" src="../figures/rt_longdiff_2_17.png" /> <img alt="" src="../figures/rt_longdiff_2_18.png" />
+<img alt="" src="../figures/rt_longdiff_2_19.png" /> <img alt="" src="../figures/rt_longdiff_2_20.png" />
+<img alt="" src="../figures/rt_longdiff_2_21.png" /> <img alt="" src="../figures/rt_longdiff_2_22.png" />
+<img alt="" src="../figures/rt_longdiff_2_23.png" /> <img alt="" src="../figures/rt_longdiff_2_24.png" />
+<img alt="" src="../figures/rt_longdiff_2_25.png" /> <img alt="" src="../figures/rt_longdiff_2_26.png" />
+<img alt="" src="../figures/rt_longdiff_2_27.png" /> <img alt="" src="../figures/rt_longdiff_2_28.png" />
+<img alt="" src="../figures/rt_longdiff_2_29.png" /> <img alt="" src="../figures/rt_longdiff_2_30.png" />
+<img alt="" src="../figures/rt_longdiff_2_31.png" /> <img alt="" src="../figures/rt_longdiff_2_32.png" />
+<img alt="" src="../figures/rt_longdiff_2_33.png" /> <img alt="" src="../figures/rt_longdiff_2_34.png" />
+<img alt="" src="../figures/rt_longdiff_2_35.png" /> <img alt="" src="../figures/rt_longdiff_2_36.png" />
+<img alt="" src="../figures/rt_longdiff_2_37.png" /> <img alt="" src="../figures/rt_longdiff_2_38.png" />
+<img alt="" src="../figures/rt_longdiff_2_39.png" /> <img alt="" src="../figures/rt_longdiff_2_40.png" />
+<img alt="" src="../figures/rt_longdiff_2_41.png" /> <img alt="" src="../figures/rt_longdiff_2_42.png" />
+<img alt="" src="../figures/rt_longdiff_2_43.png" /> <img alt="" src="../figures/rt_longdiff_2_44.png" />
+<img alt="" src="../figures/rt_longdiff_2_45.png" /> <img alt="" src="../figures/rt_longdiff_2_46.png" />
+<img alt="" src="../figures/rt_longdiff_2_47.png" /> <img alt="" src="../figures/rt_longdiff_2_48.png" />
+<img alt="" src="../figures/rt_longdiff_2_49.png" /> <img alt="" src="../figures/rt_longdiff_2_50.png" />
+<img alt="" src="../figures/rt_longdiff_2_51.png" /> <img alt="" src="../figures/rt_longdiff_2_52.png" />
+<img alt="" src="../figures/rt_longdiff_2_53.png" /> <img alt="" src="../figures/rt_longdiff_2_54.png" />
+<img alt="" src="../figures/rt_longdiff_2_55.png" /> <img alt="" src="../figures/rt_longdiff_2_56.png" />
+<img alt="" src="../figures/rt_longdiff_2_57.png" /> <img alt="" src="../figures/rt_longdiff_2_58.png" />
+<img alt="" src="../figures/rt_longdiff_2_59.png" /> <img alt="" src="../figures/rt_longdiff_2_60.png" />
+<img alt="" src="../figures/rt_longdiff_2_61.png" /> <img alt="" src="../figures/rt_longdiff_2_62.png" />
+<img alt="" src="../figures/rt_longdiff_2_63.png" /> <img alt="" src="../figures/rt_longdiff_2_64.png" />
+<img alt="" src="../figures/rt_longdiff_2_65.png" /> <img alt="" src="../figures/rt_longdiff_2_66.png" />
+<img alt="" src="../figures/rt_longdiff_2_67.png" /> <img alt="" src="../figures/rt_longdiff_2_68.png" />
+<img alt="" src="../figures/rt_longdiff_2_69.png" /> <img alt="" src="../figures/rt_longdiff_2_70.png" />
+<img alt="" src="../figures/rt_longdiff_2_71.png" /> <img alt="" src="../figures/rt_longdiff_2_72.png" />
+<img alt="" src="../figures/rt_longdiff_2_73.png" /> <img alt="" src="../figures/rt_longdiff_2_74.png" />
+<img alt="" src="../figures/rt_longdiff_2_75.png" /> <img alt="" src="../figures/rt_longdiff_2_76.png" />
+<img alt="" src="../figures/rt_longdiff_2_77.png" /> <img alt="" src="../figures/rt_longdiff_2_78.png" />
+<img alt="" src="../figures/rt_longdiff_2_79.png" /> <img alt="" src="../figures/rt_longdiff_2_80.png" />
+<img alt="" src="../figures/rt_longdiff_2_81.png" /> <img alt="" src="../figures/rt_longdiff_2_82.png" />
+<img alt="" src="../figures/rt_longdiff_2_83.png" /> <img alt="" src="../figures/rt_longdiff_2_84.png" />
+<img alt="" src="../figures/rt_longdiff_2_85.png" /> <img alt="" src="../figures/rt_longdiff_2_86.png" />
+<img alt="" src="../figures/rt_longdiff_2_87.png" /> <img alt="" src="../figures/rt_longdiff_2_88.png" />
+<img alt="" src="../figures/rt_longdiff_2_89.png" /> <img alt="" src="../figures/rt_longdiff_2_90.png" />
+<img alt="" src="../figures/rt_longdiff_2_91.png" /> <img alt="" src="../figures/rt_longdiff_2_92.png" />
+<img alt="" src="../figures/rt_longdiff_2_93.png" /> <img alt="" src="../figures/rt_longdiff_2_94.png" />
+<img alt="" src="../figures/rt_longdiff_2_95.png" /> <img alt="" src="../figures/rt_longdiff_2_96.png" />
+<img alt="" src="../figures/rt_longdiff_2_97.png" /> <img alt="" src="../figures/rt_longdiff_2_98.png" />
+<img alt="" src="../figures/rt_longdiff_2_99.png" /></p></div>
             </div>
         </div>
 
