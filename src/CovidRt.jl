@@ -7,7 +7,7 @@ module CovidRt
 
 using DynamicHMC, TransformVariables, LogDensityProblems, Parameters, Distributions
 using LinearAlgebra, Plots, StatsPlots, MCMCChains
-using StaticArrays
+using StaticArrays, DataFrames, Random
 
 include("utils.jl")
 export smooth, lagdiff

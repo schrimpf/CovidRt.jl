@@ -31,6 +31,9 @@ function smooth(x::AbstractVector;  w=pdf(Normal(), range(-3, 3, length=7)))
     s = findfirst((i .+ shift) .> 0)
     l = findlast((i .+ shift) .< length(x))
     sx[i] = sum(w[s:l].*x[i .+ shift[s:l]])./sum(w[s:l])
+    if isnan(sx[i])
+      sx[i] = 0
+    end
   end
   return(sx)
 end

@@ -1,0 +1,258 @@
+---
+title       : "Estimates of $R_t$"
+subtitle    : "No policy variables"
+author      : Paul Schrimpf
+date        : `j using Dates; print(Dates.today())`
+bibliography: "covid.bib"
+link-citations: true
+options:
+      out_width : 100%
+      wrap : true
+      fig_width : 800
+      dpi : 192
+---
+
+
+
+# Results
+
+```julia
+## data prep
+using CovidData
+using CovidRt
+using TransformVariables, Parameters, Plots,  StatsPlots, DataFrames, Dates, LinearAlgebra, Distributions, Random, LogDensityProblems, DynamicHMC, MCMCChains, JLD2, Latexify
+Plots.pyplot()
+df = CovidData.statedata(policies=:indicators, fillmissingmobility=true)
+
+pvars = [Symbol("Stay.at.home..shelter.in.place"),
+         #Symbol("State.of.emergency"),
+         Symbol("Date.closed.K.12.schools"),
+         Symbol("Closed.gyms"),
+         Symbol("Closed.movie.theaters"),
+         Symbol("Closed.day.cares"),
+         Symbol("Date.banned.visitors.to.nursing.homes"),
+         Symbol("Closed.non.essential.businesses"),
+         Symbol("Closed.restaurants.except.take.out")]
+
+mvars = [:retail_and_recreation_percent_change_from_baseline,
+         :grocery_and_pharmacy_percent_change_from_baseline,
+         :parks_percent_change_from_baseline ,
+         :transit_stations_percent_change_from_baseline,
+         :workplaces_percent_change_from_baseline,
+         :residential_percent_change_from_baseline,
+         :percentchangebusinesses]
+
+df[!,:logpopdens] = log.(df[!,Symbol("Population.density.per.square.miles")])
+df[!,:weekend] = dayofweek.(df[!,:date]) .>= 6
+x0vars=[:constant, :logpopdens,
+        Symbol("Percent.Unemployed..2018."),
+        Symbol("Percent.living.under.the.federal.poverty.line..2018."),
+        Symbol("Percent.at.risk.for.serious.illness.due.to.COVID")]
+
+sdf = filter(x->x.fips<60, df)
+sdf = sort(sdf, (:state, :date))
+sdf[!,mvars] ./= 100
+sdf[!,:constant] .= 1
+xvars = vcat(x0vars, mvars);
+```
+
+Here, we will allow the initial and time varying mean of $R_{s,t}$ to
+depend on covariates.
+
+$$
+\begin{align*}
+\tilde{R}_{s,0} & \sim N(X_{0,s} \alpha_0, \sigma^2_{R,0}) \\
+\tilde{R}_{s,t} & = \rho \tilde{R}_{s,t} + u_{s,t} \;,\; u_{s,t} \sim
+N(0, \sigma^2_R) \\
+R_{s,t} & = X_{s,t} \alpha + \tilde{R}_{s,t} \\
+\Delta \log(k)_{s,t} & = \gamma (R_{s,t} - 1) + \epsilon_{s,t} -
+\epsilon_{s,t-1} \;, \; \epsilon_{s,t} \sim N(0, \sigma^2_k)
+\end{align*}
+$$
+
+We present estimates of $R_t$ with
+$$
+\Delta C(t) = C(t) - C(t-L_1)
+$$
+
+and
+
+$$
+\Delta log (\Delta C(t)) =  log (\Delta C(t)) -  log (\Delta C(t - L_2))
+$$
+
+for a variety of values of $L_1$ and $L_2$
+
+
+```julia; results="raw"
+reestimate=false
+rlo=-1 #1 - eps(Float64)
+rhi=1.2 #1+ eps(Float64)
+K = length(xvars)
+priors = (γ = truncated(Normal(1/7,1/7), 1/28, 1/1),
+          σR0 = truncated(Normal(1, 3), 0, Inf),
+          α0 = MvNormal(zeros(length(x0vars)), sqrt(10)), #truncated(Normal(1, 3), 0, Inf),
+          σR = truncated(Normal(0.25,1),0,Inf),
+          σk = truncated(Normal(0.1, 5), 0, Inf),
+          ρ = Uniform(rlo, rhi),
+          α = MvNormal(zeros(K), sqrt(10))
+          )
+
+states_to_plot = ["New York", "New Jersey","Massachusetts","California",
+                  "Georgia","Illinois","Michigan",
+                  "Ohio","Wisconsin","Washington"]
+warmup = default_warmup_stages(local_optimization=nothing,
+                               stepsize_search=nothing,
+                               init_steps=100, middle_steps=100,
+                               terminating_steps=2*100,
+                               doubling_stages=4, M=Symmetric)
+for L1 in [3, 7]
+  for L2 in [7]
+    mdl = CovidRt.RtModel(sdf, Symbol("cases.nyt"), xvars, x0vars,
+                          priors; L1=L1, L2=L2,
+                          time0=r->(r[Symbol("cases.nyt")].>=5))
+    estfile = "rt_onlym_$(L1)_$(L2).jld2"
+
+    if !isfile(estfile) || reestimate
+      post = CovidRt.mcmc(mdl; iterations=2000, warmup=warmup)
+      @save estfile post
+    end
+    @load estfile post
+    cc = CovidRt.MCMCChain(post, xvars, x0vars)
+
+    println("## L₁ = $(L1), L₂ = $(L2)")
+    println()
+
+    #display(plot(cc))
+
+    println(latexify(DataFrame(describe(cc)[1]), env=:mdtable, latex=false, fmt=x->round(x, sigdigits=3)))
+    println(latexify(DataFrame(describe(cc)[2]), env=:mdtable, latex=false, fmt=x->round(x, sigdigits=3)))
+    states = mdl.id
+    S = length(states_to_plot)
+    figs = fill(plot(), S)
+    for (i,st) in enumerate(states_to_plot)
+      s = findfirst(states.==st)
+      figr = CovidRt.plotpostr(mdl.t[s],mdl.dlogk[s],post, mdl.X[s], mdl.X0[s])
+      l = @layout [a{.1h}; grid(1,1)]
+      figs[i] = plot(plot(annotation=(0.5,0.5, st*", L₁=$(L1) L₂=$(L2)"), framestyle = :none),
+                     plot(figr, ylim=(-1,15)), layout=l)
+      display(figs[i])
+    end
+  end
+end
+```
+
+# Lagging mobility measures
+
+There is expected to be some delay between infection transmission and
+reporting.
+
+[The Midas network has compiled various published estimates of the
+duration of stages of corona virus
+infections.](https://github.com/midas-network/COVID-19/tree/master/parameter_estimates/2019_novel_coronavirus)
+
+The incubation period (time between a person becomes infected and
+becomes symptomatic) is generally believed to be around 5 days. There
+are fewer estimates of the time between symptom onset and
+reporting. The few available estimates are from Italy and
+China. Points estimates range from 5-7 days, but confidence intervals
+span 1-20 days. Infections that are reported on day $t$ likely occurred
+between day $t-5$ and $t-20$.
+
+There are two important implications. The first is simply a matter of
+interpretation.  Our $R_t$ estimates are the effective reproductive
+number of cases reported on day $t$, which is the effective
+reproductive number of infections that began 5-20 days ago.
+
+The second implication is that $R_t$ should be related to mobility
+measurements and policy conditions on days $t-5$ to $t-20$. One option
+would be to include many different lags of these variables in the
+model. However, this will greatly reduce statistical power and
+increase computation time. Instead, we will construct lagged, weighted
+rolling averages for use in the model. Specifically, we will use
+
+$$
+\tilde{m}_t = \sum_{\ell=5}^{20} m_{t-\ell} P(\ell \text{ days between infection and reporting})
+$$
+
+with the assumption that the number of days between infection and reporting is $N(7,3)$ truncated to $[0,20]$.
+
+```julia
+d = truncated(Normal(7, 3), 5, 20)
+ℓ = collect(5:20)
+p = pdf.(d, ℓ)
+p ./= sum(p)
+plot(ℓ, d, title="Weights for covariates", xlab="lag", ylab="weight")
+```
+
+```julia
+w = vcat(reverse(p), zeros(minimum(ℓ)+maximum(ℓ)))
+sort!(sdf, (:state, :date))
+for v in mvars
+  newv = Symbol(string(v)*"_lagged")
+  sdf[!,newv] = copy(sdf[!,v])
+  for gdf in groupby(sdf, :state)
+    gdf[:, newv] .= smooth(gdf[:,v], w=w)
+  end
+end
+mlvars = [Symbol(string(v)*"_lagged") for v in mvars]
+xvars = vcat(x0vars, mlvars);
+```
+
+```julia; results="raw"
+reestimate=true
+rlo=-1 #1 - eps(Float64)
+rhi=1.2 #1+ eps(Float64)
+K = length(xvars)
+priors = (γ = truncated(Normal(1/7,1/7), 1/28, 1/1),
+          σR0 = truncated(Normal(1, 3), 0, Inf),
+          α0 = MvNormal(zeros(length(x0vars)), sqrt(10)), #truncated(Normal(1, 3), 0, Inf),
+          σR = truncated(Normal(0.25,1),0,Inf),
+          σk = truncated(Normal(0.1, 5), 0, Inf),
+          ρ = Uniform(rlo, rhi),
+          α = MvNormal(zeros(K), sqrt(10))
+          )
+
+states_to_plot = ["New York", "New Jersey","Massachusetts","California",
+                  "Georgia","Illinois","Michigan",
+                  "Ohio","Wisconsin","Washington"]
+warmup = default_warmup_stages(local_optimization=FindLocalOptimum(1e-4, 100),
+                               stepsize_search=nothing,
+                               init_steps=100, middle_steps=100,
+                               terminating_steps=2*100,
+                               doubling_stages=4, M=Symmetric)
+for L1 in [3, 7]
+  for L2 in [7]
+    mdl = CovidRt.RtModel(sdf, Symbol("cases.nyt"), xvars, x0vars,
+                          priors; L1=L1, L2=L2,
+                          time0=r->(r[Symbol("cases.nyt")].>=5))
+    estfile = "rt_mlag_$(L1)_$(L2).jld2"
+
+    if !isfile(estfile) || reestimate
+      post = CovidRt.mcmc(mdl; iterations=2000, warmup=warmup)
+      @save estfile post
+    end
+    @load estfile post
+    cc = CovidRt.MCMCChain(post, xvars, x0vars)
+
+    println("## L₁ = $(L1), L₂ = $(L2)")
+    println()
+
+    #display(plot(cc))
+
+    println(latexify(DataFrame(describe(cc)[1]), env=:mdtable, latex=false, fmt=x->round(x, sigdigits=3)))
+    println(latexify(DataFrame(describe(cc)[2]), env=:mdtable, latex=false, fmt=x->round(x, sigdigits=3)))
+    states = mdl.id
+    S = length(states_to_plot)
+    figs = fill(plot(), S)
+    for (i,st) in enumerate(states_to_plot)
+      s = findfirst(states.==st)
+      figr = CovidRt.plotpostr(mdl.t[s],mdl.dlogk[s],post, mdl.X[s], mdl.X0[s])
+      l = @layout [a{.1h}; grid(1,1)]
+      figs[i] = plot(plot(annotation=(0.5,0.5, st*", L₁=$(L1) L₂=$(L2)"), framestyle = :none),
+                     plot(figr, ylim=(-1,15)), layout=l)
+      display(figs[i])
+    end
+  end
+end
+```

@@ -38,5 +38,7 @@ nav:
   - Reproductive number estimates:
     - Systrom Approach: Rt.md
     - Long-differening: rt_longdiff.md
+    - Without policies: rt_onlym.md
+    - Extensions: extensions.md
   - About:
     - License: license.md
