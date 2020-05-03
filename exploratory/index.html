@@ -136,11 +136,7 @@
 <p>This section contains some exploratory plots.</p>
 <pre><code class="julia">using CovidData
 using CovidRt
-</code></pre>
-
-<pre><code>Error: importing CovidRt into Main conflicts with an existing identifier
-</code></pre>
-<pre><code class="julia">using TransformVariables, Parameters, Plots,  StatsPlots, DataFrames, Dates, LinearAlgebra, Distributions, Random, LogDensityProblems, DynamicHMC, MCMCChains, JLD2, Latexify
+using TransformVariables, Parameters, Plots,  StatsPlots, DataFrames, Dates, LinearAlgebra, Distributions, Random, LogDensityProblems, DynamicHMC, MCMCChains, JLD2, Latexify
 Plots.pyplot()
 df = CovidData.statedata(policies=:indicators, fillmissingmobility=true)
 df[!,:log_encounters_rate] = log.(1 .+ df[!,:encounters_rate])
@@ -224,7 +220,8 @@ function explorelags(vars, sdf, states_to_plot; toplot=vars, tdiffs=-10:40, corr
         fig[i] =  twinx()
         fig[i] = plot!(fig[i],subdf[!,:date], subdf[!,v], color=colors[2], labels=string(v), ylab=string(v), xlim=xlim, legend=:topright)
       end
-      display(plot(fig[1:9]..., layout=(3,3), reuse=false))
+      display(plot(fig[1:4]..., layout=(2,2), reuse=false))
+      display(plot(fig[5:8]..., layout=(2,2), reuse=false))
     end
 
     c = acf(sdf, :state, :date, :ΔlogΔcases, v, tdiffs, correlation=correlation)
@@ -252,189 +249,15 @@ tbl=explorelags(vars, sdf, states_to_plot;
                         :percentchangebusinesses,
                         :n_grade_total,
                         :daily_visitation_diff,
-                        :log_encounters_rate])
+                        :log_encounters_rate]);
 </code></pre>
 
-<table>
-<thead>
-<tr>
-<th align="right">Variable</th>
-<th align="right">ℓ maximum cor</th>
-<th align="right">maximum cor</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="right">retail and recreation percent change from baseline</td>
-<td align="right">15.00</td>
-<td align="right">0.80</td>
-</tr>
-<tr>
-<td align="right">grocery and pharmacy percent change from baseline</td>
-<td align="right">11.00</td>
-<td align="right">0.66</td>
-</tr>
-<tr>
-<td align="right">parks percent change from baseline</td>
-<td align="right">16.00</td>
-<td align="right">0.27</td>
-</tr>
-<tr>
-<td align="right">transit stations percent change from baseline</td>
-<td align="right">15.00</td>
-<td align="right">0.72</td>
-</tr>
-<tr>
-<td align="right">workplaces percent change from baseline</td>
-<td align="right">15.00</td>
-<td align="right">0.80</td>
-</tr>
-<tr>
-<td align="right">residential percent change from baseline</td>
-<td align="right">15.00</td>
-<td align="right">-0.75</td>
-</tr>
-<tr>
-<td align="right">percentchangehours</td>
-<td align="right">15.00</td>
-<td align="right">0.80</td>
-</tr>
-<tr>
-<td align="right">percentchangebusinesses</td>
-<td align="right">14.00</td>
-<td align="right">0.79</td>
-</tr>
-<tr>
-<td align="right">n grade total</td>
-<td align="right">14.00</td>
-<td align="right">-0.67</td>
-</tr>
-<tr>
-<td align="right">daily distance diff</td>
-<td align="right">14.00</td>
-<td align="right">0.75</td>
-</tr>
-<tr>
-<td align="right">n grade distance</td>
-<td align="right">14.00</td>
-<td align="right">-0.63</td>
-</tr>
-<tr>
-<td align="right">daily visitation diff</td>
-<td align="right">15.00</td>
-<td align="right">0.79</td>
-</tr>
-<tr>
-<td align="right">n grade visitation</td>
-<td align="right">15.00</td>
-<td align="right">-0.47</td>
-</tr>
-<tr>
-<td align="right">log encounters rate</td>
-<td align="right">16.00</td>
-<td align="right">0.49</td>
-</tr>
-<tr>
-<td align="right">n grade encounters</td>
-<td align="right">15.00</td>
-<td align="right">-0.44</td>
-</tr>
-</tbody>
-</table>
-<p><img alt="" src="../figures/exploratory_2_1.png" /> <img alt="" src="../figures/exploratory_2_2.png" />
-<img alt="" src="../figures/exploratory_2_3.png" /> <img alt="" src="../figures/exploratory_2_4.png" />
-<img alt="" src="../figures/exploratory_2_5.png" /> <img alt="" src="../figures/exploratory_2_6.png" />
-<img alt="" src="../figures/exploratory_2_7.png" /> <img alt="" src="../figures/exploratory_2_8.png" />
-<img alt="" src="../figures/exploratory_2_9.png" /> <img alt="" src="../figures/exploratory_2_10.png" /></p>
+<pre><code>Error: UndefVarError: colors not defined
+</code></pre>
 <pre><code class="julia">println(tbl)
 </code></pre>
 
-<table>
-<thead>
-<tr>
-<th align="right">Variable</th>
-<th align="right">ℓ maximum cor</th>
-<th align="right">maximum cor</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="right">retail and recreation percent change from baseline</td>
-<td align="right">15.00</td>
-<td align="right">0.80</td>
-</tr>
-<tr>
-<td align="right">grocery and pharmacy percent change from baseline</td>
-<td align="right">11.00</td>
-<td align="right">0.66</td>
-</tr>
-<tr>
-<td align="right">parks percent change from baseline</td>
-<td align="right">16.00</td>
-<td align="right">0.27</td>
-</tr>
-<tr>
-<td align="right">transit stations percent change from baseline</td>
-<td align="right">15.00</td>
-<td align="right">0.72</td>
-</tr>
-<tr>
-<td align="right">workplaces percent change from baseline</td>
-<td align="right">15.00</td>
-<td align="right">0.80</td>
-</tr>
-<tr>
-<td align="right">residential percent change from baseline</td>
-<td align="right">15.00</td>
-<td align="right">-0.75</td>
-</tr>
-<tr>
-<td align="right">percentchangehours</td>
-<td align="right">15.00</td>
-<td align="right">0.80</td>
-</tr>
-<tr>
-<td align="right">percentchangebusinesses</td>
-<td align="right">14.00</td>
-<td align="right">0.79</td>
-</tr>
-<tr>
-<td align="right">n grade total</td>
-<td align="right">14.00</td>
-<td align="right">-0.67</td>
-</tr>
-<tr>
-<td align="right">daily distance diff</td>
-<td align="right">14.00</td>
-<td align="right">0.75</td>
-</tr>
-<tr>
-<td align="right">n grade distance</td>
-<td align="right">14.00</td>
-<td align="right">-0.63</td>
-</tr>
-<tr>
-<td align="right">daily visitation diff</td>
-<td align="right">15.00</td>
-<td align="right">0.79</td>
-</tr>
-<tr>
-<td align="right">n grade visitation</td>
-<td align="right">15.00</td>
-<td align="right">-0.47</td>
-</tr>
-<tr>
-<td align="right">log encounters rate</td>
-<td align="right">16.00</td>
-<td align="right">0.49</td>
-</tr>
-<tr>
-<td align="right">n grade encounters</td>
-<td align="right">15.00</td>
-<td align="right">-0.44</td>
-</tr>
-</tbody>
-</table>
+<p>Error: UndefVarError: tbl not defined</p>
 <p>Some comments:</p>
 <ul>
 <li>
@@ -476,7 +299,7 @@ I_t & = (1+\gamma (R_t - 1)) I_{t-1}
 <p>
 <script type="math/tex; mode=display">
 \begin{align*}
-C_{t} - C_{t - L_1} = & \sum_{s={t-L_1+1}^{t} \left(\prod_{r=t-L_1+1}^s 1 + \gamma (R_r - 1) \right) I_{t-L_1} \\
+C_{t} - C_{t - L_1} = & \sum_{s=t-L_1+1}^{t} \left(\prod_{r=t-L_1+1}^s 1 + \gamma (R_r - 1) \right) I_{t-L_1} \\
  = & (1+\gamma(\overline{R}_{t-L_1,t}) ) I_{t-L_1} \\
  = & (1+\gamma(\overline{R}_{t-L_1,t})) (1+\gamma(\overline{R}_{t-L_1-L_2,t-L_1})) I_{t-L_1-L2}
 \end{align*}
@@ -495,6 +318,7 @@ the log difference:</p>
 \begin{align*}
 \log (C_t - C_{t-L}) - \log(C_{t-L} - C_{t - 2L}) = & \log( 1 + \gamma(\overline{R}_{t-L,t}) ) \\
 \approx & \gamma (\overline{R}_{t-L,t} - 1)
+\end{align*}
 </script>
 </p>
 <p>!!! question Is this $L_1 = L_2$ condition correct and general? Or some
@@ -509,7 +333,8 @@ further in the past.</p>
 <p>Motivated by the analysis in the previous section, we will use the
 moving average from $t-L$ to time $t$ in place of each measurement
 variable at time $t$.</p>
-<pre><code class="julia">L = 7
+<pre><code class="julia">Plots.closeall()
+L = 7
 sdf = filter(x-&gt;x.fips &lt; 60, df)
 sort!(sdf, (:state, :date))
 sdf[!,:Δcases] = by(sdf, :state, Δcases = Symbol(&quot;cases.nyt&quot;) =&gt; x-&gt;lagdiff(x, L))[!,:Δcases]./L
@@ -523,223 +348,19 @@ tbl=explorelags(vars, sdf, states_to_plot;
                 toplot=[:residential_percent_change_from_baseline,
                         :percentchangebusinesses,
                         :n_grade_total,
-                        :log_encounters_rate], correlation=false)
+                        :log_encounters_rate], correlation=false);
 </code></pre>
 
-<table>
-<thead>
-<tr>
-<th align="right">Variable</th>
-<th align="right">ℓ maximum cov</th>
-<th align="right">maximum cov</th>
-<th align="right">variance</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="right">retail and recreation percent change from baseline</td>
-<td align="right">14.00</td>
-<td align="right">2.24</td>
-<td align="right">426.19</td>
-</tr>
-<tr>
-<td align="right">grocery and pharmacy percent change from baseline</td>
-<td align="right">9.00</td>
-<td align="right">1.23</td>
-<td align="right">184.22</td>
-</tr>
-<tr>
-<td align="right">parks percent change from baseline</td>
-<td align="right">13.00</td>
-<td align="right">1.23</td>
-<td align="right">855.44</td>
-</tr>
-<tr>
-<td align="right">transit stations percent change from baseline</td>
-<td align="right">14.00</td>
-<td align="right">2.14</td>
-<td align="right">534.46</td>
-</tr>
-<tr>
-<td align="right">workplaces percent change from baseline</td>
-<td align="right">14.00</td>
-<td align="right">2.03</td>
-<td align="right">363.65</td>
-</tr>
-<tr>
-<td align="right">residential percent change from baseline</td>
-<td align="right">14.00</td>
-<td align="right">-0.79</td>
-<td align="right">57.28</td>
-</tr>
-<tr>
-<td align="right">percentchangehours</td>
-<td align="right">14.00</td>
-<td align="right">2.68</td>
-<td align="right">636.21</td>
-</tr>
-<tr>
-<td align="right">percentchangebusinesses</td>
-<td align="right">13.00</td>
-<td align="right">2.02</td>
-<td align="right">401.74</td>
-</tr>
-<tr>
-<td align="right">n grade total</td>
-<td align="right">12.00</td>
-<td align="right">-0.08</td>
-<td align="right">0.71</td>
-</tr>
-<tr>
-<td align="right">daily distance diff</td>
-<td align="right">14.00</td>
-<td align="right">0.02</td>
-<td align="right">0.03</td>
-</tr>
-<tr>
-<td align="right">n grade distance</td>
-<td align="right">11.00</td>
-<td align="right">-0.07</td>
-<td align="right">0.67</td>
-</tr>
-<tr>
-<td align="right">daily visitation diff</td>
-<td align="right">14.00</td>
-<td align="right">0.02</td>
-<td align="right">0.05</td>
-</tr>
-<tr>
-<td align="right">n grade visitation</td>
-<td align="right">10.00</td>
-<td align="right">-0.08</td>
-<td align="right">1.26</td>
-</tr>
-<tr>
-<td align="right">log encounters rate</td>
-<td align="right">14.00</td>
-<td align="right">0.11</td>
-<td align="right">3.13</td>
-</tr>
-<tr>
-<td align="right">n grade encounters</td>
-<td align="right">14.00</td>
-<td align="right">-0.08</td>
-<td align="right">2.16</td>
-</tr>
-</tbody>
-</table>
-<p><img alt="" src="../figures/exploratory_4_1.png" /> <img alt="" src="../figures/exploratory_4_2.png" />
-<img alt="" src="../figures/exploratory_4_3.png" /> <img alt="" src="../figures/exploratory_4_4.png" />
-<img alt="" src="../figures/exploratory_4_5.png" /> <img alt="" src="../figures/exploratory_4_6.png" />
-<img alt="" src="../figures/exploratory_4_7.png" /> <img alt="" src="../figures/exploratory_4_8.png" /></p>
+<pre><code>Error: UndefVarError: colors not defined
+</code></pre>
 <pre><code class="julia">println(tbl)
 </code></pre>
 
-<table>
-<thead>
-<tr>
-<th align="right">Variable</th>
-<th align="right">ℓ maximum cov</th>
-<th align="right">maximum cov</th>
-<th align="right">variance</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="right">retail and recreation percent change from baseline</td>
-<td align="right">14.00</td>
-<td align="right">2.24</td>
-<td align="right">426.19</td>
-</tr>
-<tr>
-<td align="right">grocery and pharmacy percent change from baseline</td>
-<td align="right">9.00</td>
-<td align="right">1.23</td>
-<td align="right">184.22</td>
-</tr>
-<tr>
-<td align="right">parks percent change from baseline</td>
-<td align="right">13.00</td>
-<td align="right">1.23</td>
-<td align="right">855.44</td>
-</tr>
-<tr>
-<td align="right">transit stations percent change from baseline</td>
-<td align="right">14.00</td>
-<td align="right">2.14</td>
-<td align="right">534.46</td>
-</tr>
-<tr>
-<td align="right">workplaces percent change from baseline</td>
-<td align="right">14.00</td>
-<td align="right">2.03</td>
-<td align="right">363.65</td>
-</tr>
-<tr>
-<td align="right">residential percent change from baseline</td>
-<td align="right">14.00</td>
-<td align="right">-0.79</td>
-<td align="right">57.28</td>
-</tr>
-<tr>
-<td align="right">percentchangehours</td>
-<td align="right">14.00</td>
-<td align="right">2.68</td>
-<td align="right">636.21</td>
-</tr>
-<tr>
-<td align="right">percentchangebusinesses</td>
-<td align="right">13.00</td>
-<td align="right">2.02</td>
-<td align="right">401.74</td>
-</tr>
-<tr>
-<td align="right">n grade total</td>
-<td align="right">12.00</td>
-<td align="right">-0.08</td>
-<td align="right">0.71</td>
-</tr>
-<tr>
-<td align="right">daily distance diff</td>
-<td align="right">14.00</td>
-<td align="right">0.02</td>
-<td align="right">0.03</td>
-</tr>
-<tr>
-<td align="right">n grade distance</td>
-<td align="right">11.00</td>
-<td align="right">-0.07</td>
-<td align="right">0.67</td>
-</tr>
-<tr>
-<td align="right">daily visitation diff</td>
-<td align="right">14.00</td>
-<td align="right">0.02</td>
-<td align="right">0.05</td>
-</tr>
-<tr>
-<td align="right">n grade visitation</td>
-<td align="right">10.00</td>
-<td align="right">-0.08</td>
-<td align="right">1.26</td>
-</tr>
-<tr>
-<td align="right">log encounters rate</td>
-<td align="right">14.00</td>
-<td align="right">0.11</td>
-<td align="right">3.13</td>
-</tr>
-<tr>
-<td align="right">n grade encounters</td>
-<td align="right">14.00</td>
-<td align="right">-0.08</td>
-<td align="right">2.16</td>
-</tr>
-</tbody>
-</table>
+<p>Error: UndefVarError: tbl not defined</p>
 <p>Even after this adjustment, there is some mechanical dependence between
 when the maximum correlation occurs and $L$.</p>
-<pre><code class="julia">for L in [1, 3, 7, 10, 14]
+<pre><code class="julia">Plots.closeall()
+for L in [1, 3, 7, 10, 14]
   sdf = filter(x-&gt;x.fips &lt; 60, df)
   sort!(sdf, (:state, :date))
   sdf[!,:Δcases] = by(sdf, :state, Δcases = Symbol(&quot;cases.nyt&quot;) =&gt; x-&gt;lagdiff(x, L))[!,:Δcases]./L
@@ -752,93 +373,536 @@ when the maximum correlation occurs and $L$.</p>
   @show L
   tbl=explorelags(vars, sdf, states_to_plot;
                   toplot=[], correlation=false)
-  println(&quot;\nL = $L&quot;)
+
+  println()
+  println(&quot;### L = $L&quot;)
+  println()
   println(tbl)
 end
 </code></pre>
 
 <p>L = 1</p>
-<p>L = 1 | Variable | ℓ maximum cov | maximum cov | variance | |
-————————————————–:| ————-:| ———–:| ——–:| | retail and recreation
-percent change from baseline | 7.00 | 2.57 | 404.51 | | grocery and
-pharmacy percent change from baseline | 5.00 | 1.77 | 206.00 | |
-parks percent change from baseline | 9.00 | 1.70 | 1435.15 | |
-transit stations percent change from baseline | 4.00 | 2.55 | 513.03
-| | workplaces percent change from baseline | 4.00 | 2.61 | 340.96
-| | residential percent change from baseline | 4.00 | -1.01 | 58.31
-| | percentchangehours | 8.00 | 3.05 | 580.19 | |
-percentchangebusinesses | 7.00 | 2.56 | 383.69 | | n grade total |
-7.00 | -0.10 | 0.76 | | daily distance diff | 7.00 | 0.02 | 0.03
-| | n grade distance | 0.00 | -0.10 | 0.76 | | daily visitation
-diff | 7.00 | 0.03 | 0.05 | | n grade visitation | 7.00 | -0.12
-| 1.58 | | log encounters rate | 7.00 | 0.12 | 3.07 | | n grade
-encounters | 7.00 | -0.09 | 2.23 |</p>
+<h3 id="l-1">L = 1<a class="headerlink" href="#l-1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th align="right">Variable</th>
+<th align="right">ℓ maximum cov</th>
+<th align="right">maximum cov</th>
+<th align="right">variance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">retail and recreation percent change from baseline</td>
+<td align="right">7.00</td>
+<td align="right">2.57</td>
+<td align="right">404.51</td>
+</tr>
+<tr>
+<td align="right">grocery and pharmacy percent change from baseline</td>
+<td align="right">5.00</td>
+<td align="right">1.77</td>
+<td align="right">206.00</td>
+</tr>
+<tr>
+<td align="right">parks percent change from baseline</td>
+<td align="right">9.00</td>
+<td align="right">1.70</td>
+<td align="right">1435.15</td>
+</tr>
+<tr>
+<td align="right">transit stations percent change from baseline</td>
+<td align="right">4.00</td>
+<td align="right">2.55</td>
+<td align="right">513.03</td>
+</tr>
+<tr>
+<td align="right">workplaces percent change from baseline</td>
+<td align="right">4.00</td>
+<td align="right">2.61</td>
+<td align="right">340.96</td>
+</tr>
+<tr>
+<td align="right">residential percent change from baseline</td>
+<td align="right">4.00</td>
+<td align="right">-1.01</td>
+<td align="right">58.31</td>
+</tr>
+<tr>
+<td align="right">percentchangehours</td>
+<td align="right">8.00</td>
+<td align="right">3.05</td>
+<td align="right">580.19</td>
+</tr>
+<tr>
+<td align="right">percentchangebusinesses</td>
+<td align="right">7.00</td>
+<td align="right">2.56</td>
+<td align="right">383.69</td>
+</tr>
+<tr>
+<td align="right">n grade total</td>
+<td align="right">7.00</td>
+<td align="right">-0.10</td>
+<td align="right">0.76</td>
+</tr>
+<tr>
+<td align="right">daily distance diff</td>
+<td align="right">7.00</td>
+<td align="right">0.02</td>
+<td align="right">0.03</td>
+</tr>
+<tr>
+<td align="right">n grade distance</td>
+<td align="right">0.00</td>
+<td align="right">-0.10</td>
+<td align="right">0.76</td>
+</tr>
+<tr>
+<td align="right">daily visitation diff</td>
+<td align="right">7.00</td>
+<td align="right">0.03</td>
+<td align="right">0.05</td>
+</tr>
+<tr>
+<td align="right">n grade visitation</td>
+<td align="right">7.00</td>
+<td align="right">-0.12</td>
+<td align="right">1.58</td>
+</tr>
+<tr>
+<td align="right">log encounters rate</td>
+<td align="right">7.00</td>
+<td align="right">0.12</td>
+<td align="right">3.07</td>
+</tr>
+<tr>
+<td align="right">n grade encounters</td>
+<td align="right">7.00</td>
+<td align="right">-0.09</td>
+<td align="right">2.23</td>
+</tr>
+</tbody>
+</table>
 <p>L = 3</p>
-<p>L = 3 | Variable | ℓ maximum cov | maximum cov | variance | |
-————————————————–:| ————-:| ———–:| ——–:| | retail and recreation
-percent change from baseline | 8.00 | 2.39 | 410.84 | | grocery and
-pharmacy percent change from baseline | 6.00 | 1.51 | 193.41 | |
-parks percent change from baseline | 10.00 | 1.37 | 1116.30 | |
-transit stations percent change from baseline | 6.00 | 2.37 | 520.55
-| | workplaces percent change from baseline | 6.00 | 2.23 | 346.41
-| | residential percent change from baseline | 11.00 | -0.85 |
-56.31 | | percentchangehours | 7.00 | 2.91 | 601.86 | |
-percentchangebusinesses | 6.00 | 2.32 | 390.19 | | n grade total |
-8.00 | -0.09 | 0.72 | | daily distance diff | 8.00 | 0.02 | 0.03
-| | n grade distance | 7.00 | -0.09 | 0.70 | | daily visitation
-diff | 8.00 | 0.03 | 0.05 | | n grade visitation | 8.00 | -0.09
-| 1.40 | | log encounters rate | 9.00 | 0.11 | 3.08 | | n grade
-encounters | 8.00 | -0.09 | 2.19 |</p>
+<h3 id="l-3">L = 3<a class="headerlink" href="#l-3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th align="right">Variable</th>
+<th align="right">ℓ maximum cov</th>
+<th align="right">maximum cov</th>
+<th align="right">variance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">retail and recreation percent change from baseline</td>
+<td align="right">8.00</td>
+<td align="right">2.39</td>
+<td align="right">410.84</td>
+</tr>
+<tr>
+<td align="right">grocery and pharmacy percent change from baseline</td>
+<td align="right">6.00</td>
+<td align="right">1.51</td>
+<td align="right">193.41</td>
+</tr>
+<tr>
+<td align="right">parks percent change from baseline</td>
+<td align="right">10.00</td>
+<td align="right">1.37</td>
+<td align="right">1116.30</td>
+</tr>
+<tr>
+<td align="right">transit stations percent change from baseline</td>
+<td align="right">6.00</td>
+<td align="right">2.37</td>
+<td align="right">520.55</td>
+</tr>
+<tr>
+<td align="right">workplaces percent change from baseline</td>
+<td align="right">6.00</td>
+<td align="right">2.23</td>
+<td align="right">346.41</td>
+</tr>
+<tr>
+<td align="right">residential percent change from baseline</td>
+<td align="right">11.00</td>
+<td align="right">-0.85</td>
+<td align="right">56.31</td>
+</tr>
+<tr>
+<td align="right">percentchangehours</td>
+<td align="right">7.00</td>
+<td align="right">2.91</td>
+<td align="right">601.86</td>
+</tr>
+<tr>
+<td align="right">percentchangebusinesses</td>
+<td align="right">6.00</td>
+<td align="right">2.32</td>
+<td align="right">390.19</td>
+</tr>
+<tr>
+<td align="right">n grade total</td>
+<td align="right">8.00</td>
+<td align="right">-0.09</td>
+<td align="right">0.72</td>
+</tr>
+<tr>
+<td align="right">daily distance diff</td>
+<td align="right">8.00</td>
+<td align="right">0.02</td>
+<td align="right">0.03</td>
+</tr>
+<tr>
+<td align="right">n grade distance</td>
+<td align="right">7.00</td>
+<td align="right">-0.09</td>
+<td align="right">0.70</td>
+</tr>
+<tr>
+<td align="right">daily visitation diff</td>
+<td align="right">8.00</td>
+<td align="right">0.03</td>
+<td align="right">0.05</td>
+</tr>
+<tr>
+<td align="right">n grade visitation</td>
+<td align="right">8.00</td>
+<td align="right">-0.09</td>
+<td align="right">1.40</td>
+</tr>
+<tr>
+<td align="right">log encounters rate</td>
+<td align="right">9.00</td>
+<td align="right">0.11</td>
+<td align="right">3.08</td>
+</tr>
+<tr>
+<td align="right">n grade encounters</td>
+<td align="right">8.00</td>
+<td align="right">-0.09</td>
+<td align="right">2.19</td>
+</tr>
+</tbody>
+</table>
 <p>L = 7</p>
-<p>L = 7 | Variable | ℓ maximum cov | maximum cov | variance | |
-————————————————–:| ————-:| ———–:| ——–:| | retail and recreation
-percent change from baseline | 14.00 | 2.24 | 426.19 | | grocery
-and pharmacy percent change from baseline | 9.00 | 1.23 | 184.22 |
-| parks percent change from baseline | 13.00 | 1.23 | 855.44 | |
-transit stations percent change from baseline | 14.00 | 2.14 | 534.46
-| | workplaces percent change from baseline | 14.00 | 2.03 | 363.65
-| | residential percent change from baseline | 14.00 | -0.79 |
-57.28 | | percentchangehours | 14.00 | 2.68 | 636.21 | |
-percentchangebusinesses | 13.00 | 2.02 | 401.74 | | n grade total
-| 12.00 | -0.08 | 0.71 | | daily distance diff | 14.00 | 0.02 |
-0.03 | | n grade distance | 11.00 | -0.07 | 0.67 | | daily
-visitation diff | 14.00 | 0.02 | 0.05 | | n grade visitation |
-10.00 | -0.08 | 1.26 | | log encounters rate | 14.00 | 0.11 |
-3.13 | | n grade encounters | 14.00 | -0.08 | 2.16 |</p>
+<h3 id="l-7">L = 7<a class="headerlink" href="#l-7" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th align="right">Variable</th>
+<th align="right">ℓ maximum cov</th>
+<th align="right">maximum cov</th>
+<th align="right">variance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">retail and recreation percent change from baseline</td>
+<td align="right">14.00</td>
+<td align="right">2.24</td>
+<td align="right">426.19</td>
+</tr>
+<tr>
+<td align="right">grocery and pharmacy percent change from baseline</td>
+<td align="right">9.00</td>
+<td align="right">1.23</td>
+<td align="right">184.22</td>
+</tr>
+<tr>
+<td align="right">parks percent change from baseline</td>
+<td align="right">13.00</td>
+<td align="right">1.23</td>
+<td align="right">855.44</td>
+</tr>
+<tr>
+<td align="right">transit stations percent change from baseline</td>
+<td align="right">14.00</td>
+<td align="right">2.14</td>
+<td align="right">534.46</td>
+</tr>
+<tr>
+<td align="right">workplaces percent change from baseline</td>
+<td align="right">14.00</td>
+<td align="right">2.03</td>
+<td align="right">363.65</td>
+</tr>
+<tr>
+<td align="right">residential percent change from baseline</td>
+<td align="right">14.00</td>
+<td align="right">-0.79</td>
+<td align="right">57.28</td>
+</tr>
+<tr>
+<td align="right">percentchangehours</td>
+<td align="right">14.00</td>
+<td align="right">2.68</td>
+<td align="right">636.21</td>
+</tr>
+<tr>
+<td align="right">percentchangebusinesses</td>
+<td align="right">13.00</td>
+<td align="right">2.02</td>
+<td align="right">401.74</td>
+</tr>
+<tr>
+<td align="right">n grade total</td>
+<td align="right">12.00</td>
+<td align="right">-0.08</td>
+<td align="right">0.71</td>
+</tr>
+<tr>
+<td align="right">daily distance diff</td>
+<td align="right">14.00</td>
+<td align="right">0.02</td>
+<td align="right">0.03</td>
+</tr>
+<tr>
+<td align="right">n grade distance</td>
+<td align="right">11.00</td>
+<td align="right">-0.07</td>
+<td align="right">0.67</td>
+</tr>
+<tr>
+<td align="right">daily visitation diff</td>
+<td align="right">14.00</td>
+<td align="right">0.02</td>
+<td align="right">0.05</td>
+</tr>
+<tr>
+<td align="right">n grade visitation</td>
+<td align="right">10.00</td>
+<td align="right">-0.08</td>
+<td align="right">1.26</td>
+</tr>
+<tr>
+<td align="right">log encounters rate</td>
+<td align="right">14.00</td>
+<td align="right">0.11</td>
+<td align="right">3.13</td>
+</tr>
+<tr>
+<td align="right">n grade encounters</td>
+<td align="right">14.00</td>
+<td align="right">-0.08</td>
+<td align="right">2.16</td>
+</tr>
+</tbody>
+</table>
 <p>L = 10</p>
-<p>L = 10 | Variable | ℓ maximum cov | maximum cov | variance | |
-————————————————–:| ————-:| ———–:| ——–:| | retail and recreation
-percent change from baseline | 17.00 | 1.84 | 433.12 | | grocery
-and pharmacy percent change from baseline | 12.00 | 1.02 | 179.09 |
-| parks percent change from baseline | 16.00 | 1.01 | 771.06 | |
-transit stations percent change from baseline | 17.00 | 1.73 | 538.38
-| | workplaces percent change from baseline | 17.00 | 1.66 | 371.54
-| | residential percent change from baseline | 18.00 | -0.65 |
-58.46 | | percentchangehours | 16.00 | 2.22 | 647.28 | |
-percentchangebusinesses | 15.00 | 1.66 | 406.18 | | n grade total
-| 14.00 | -0.06 | 0.71 | | daily distance diff | 16.00 | 0.01 |
-0.03 | | n grade distance | 14.00 | -0.06 | 0.66 | | daily
-visitation diff | 18.00 | 0.02 | 0.05 | | n grade visitation |
-14.00 | -0.06 | 1.21 | | log encounters rate | 17.00 | 0.09 |
-3.17 | | n grade encounters | 15.00 | -0.07 | 2.14 |</p>
+<h3 id="l-10">L = 10<a class="headerlink" href="#l-10" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th align="right">Variable</th>
+<th align="right">ℓ maximum cov</th>
+<th align="right">maximum cov</th>
+<th align="right">variance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">retail and recreation percent change from baseline</td>
+<td align="right">17.00</td>
+<td align="right">1.84</td>
+<td align="right">433.12</td>
+</tr>
+<tr>
+<td align="right">grocery and pharmacy percent change from baseline</td>
+<td align="right">12.00</td>
+<td align="right">1.02</td>
+<td align="right">179.09</td>
+</tr>
+<tr>
+<td align="right">parks percent change from baseline</td>
+<td align="right">16.00</td>
+<td align="right">1.01</td>
+<td align="right">771.06</td>
+</tr>
+<tr>
+<td align="right">transit stations percent change from baseline</td>
+<td align="right">17.00</td>
+<td align="right">1.73</td>
+<td align="right">538.38</td>
+</tr>
+<tr>
+<td align="right">workplaces percent change from baseline</td>
+<td align="right">17.00</td>
+<td align="right">1.66</td>
+<td align="right">371.54</td>
+</tr>
+<tr>
+<td align="right">residential percent change from baseline</td>
+<td align="right">18.00</td>
+<td align="right">-0.65</td>
+<td align="right">58.46</td>
+</tr>
+<tr>
+<td align="right">percentchangehours</td>
+<td align="right">16.00</td>
+<td align="right">2.22</td>
+<td align="right">647.28</td>
+</tr>
+<tr>
+<td align="right">percentchangebusinesses</td>
+<td align="right">15.00</td>
+<td align="right">1.66</td>
+<td align="right">406.18</td>
+</tr>
+<tr>
+<td align="right">n grade total</td>
+<td align="right">14.00</td>
+<td align="right">-0.06</td>
+<td align="right">0.71</td>
+</tr>
+<tr>
+<td align="right">daily distance diff</td>
+<td align="right">16.00</td>
+<td align="right">0.01</td>
+<td align="right">0.03</td>
+</tr>
+<tr>
+<td align="right">n grade distance</td>
+<td align="right">14.00</td>
+<td align="right">-0.06</td>
+<td align="right">0.66</td>
+</tr>
+<tr>
+<td align="right">daily visitation diff</td>
+<td align="right">18.00</td>
+<td align="right">0.02</td>
+<td align="right">0.05</td>
+</tr>
+<tr>
+<td align="right">n grade visitation</td>
+<td align="right">14.00</td>
+<td align="right">-0.06</td>
+<td align="right">1.21</td>
+</tr>
+<tr>
+<td align="right">log encounters rate</td>
+<td align="right">17.00</td>
+<td align="right">0.09</td>
+<td align="right">3.17</td>
+</tr>
+<tr>
+<td align="right">n grade encounters</td>
+<td align="right">15.00</td>
+<td align="right">-0.07</td>
+<td align="right">2.14</td>
+</tr>
+</tbody>
+</table>
 <p>L = 14</p>
-<p>L = 14 | Variable | ℓ maximum cov | maximum cov | variance | |
-————————————————–:| ————-:| ———–:| ——–:| | retail and recreation
-percent change from baseline | 20.00 | 1.27 | 432.02 | | grocery
-and pharmacy percent change from baseline | 15.00 | 0.72 | 170.79 |
-| parks percent change from baseline | 19.00 | 0.70 | 684.35 | |
-transit stations percent change from baseline | 19.00 | 1.15 | 532.44
-| | workplaces percent change from baseline | 19.00 | 1.13 | 373.17
-| | residential percent change from baseline | 20.00 | -0.44 |
-58.48 | | percentchangehours | 19.00 | 1.53 | 644.77 | |
-percentchangebusinesses | 17.00 | 1.14 | 402.23 | | n grade total
-| 16.00 | -0.05 | 0.70 | | daily distance diff | 19.00 | 0.01 |
-0.03 | | n grade distance | 16.00 | -0.04 | 0.64 | | daily
-visitation diff | 21.00 | 0.01 | 0.05 | | n grade visitation |
-16.00 | -0.04 | 1.13 | | log encounters rate | 19.00 | 0.07 |
-3.20 | | n grade encounters | 17.00 | -0.05 | 2.12 |</p>
+<h3 id="l-14">L = 14<a class="headerlink" href="#l-14" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th align="right">Variable</th>
+<th align="right">ℓ maximum cov</th>
+<th align="right">maximum cov</th>
+<th align="right">variance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">retail and recreation percent change from baseline</td>
+<td align="right">20.00</td>
+<td align="right">1.27</td>
+<td align="right">432.02</td>
+</tr>
+<tr>
+<td align="right">grocery and pharmacy percent change from baseline</td>
+<td align="right">15.00</td>
+<td align="right">0.72</td>
+<td align="right">170.79</td>
+</tr>
+<tr>
+<td align="right">parks percent change from baseline</td>
+<td align="right">19.00</td>
+<td align="right">0.70</td>
+<td align="right">684.35</td>
+</tr>
+<tr>
+<td align="right">transit stations percent change from baseline</td>
+<td align="right">19.00</td>
+<td align="right">1.15</td>
+<td align="right">532.44</td>
+</tr>
+<tr>
+<td align="right">workplaces percent change from baseline</td>
+<td align="right">19.00</td>
+<td align="right">1.13</td>
+<td align="right">373.17</td>
+</tr>
+<tr>
+<td align="right">residential percent change from baseline</td>
+<td align="right">20.00</td>
+<td align="right">-0.44</td>
+<td align="right">58.48</td>
+</tr>
+<tr>
+<td align="right">percentchangehours</td>
+<td align="right">19.00</td>
+<td align="right">1.53</td>
+<td align="right">644.77</td>
+</tr>
+<tr>
+<td align="right">percentchangebusinesses</td>
+<td align="right">17.00</td>
+<td align="right">1.14</td>
+<td align="right">402.23</td>
+</tr>
+<tr>
+<td align="right">n grade total</td>
+<td align="right">16.00</td>
+<td align="right">-0.05</td>
+<td align="right">0.70</td>
+</tr>
+<tr>
+<td align="right">daily distance diff</td>
+<td align="right">19.00</td>
+<td align="right">0.01</td>
+<td align="right">0.03</td>
+</tr>
+<tr>
+<td align="right">n grade distance</td>
+<td align="right">16.00</td>
+<td align="right">-0.04</td>
+<td align="right">0.64</td>
+</tr>
+<tr>
+<td align="right">daily visitation diff</td>
+<td align="right">21.00</td>
+<td align="right">0.01</td>
+<td align="right">0.05</td>
+</tr>
+<tr>
+<td align="right">n grade visitation</td>
+<td align="right">16.00</td>
+<td align="right">-0.04</td>
+<td align="right">1.13</td>
+</tr>
+<tr>
+<td align="right">log encounters rate</td>
+<td align="right">19.00</td>
+<td align="right">0.07</td>
+<td align="right">3.20</td>
+</tr>
+<tr>
+<td align="right">n grade encounters</td>
+<td align="right">17.00</td>
+<td align="right">-0.05</td>
+<td align="right">2.12</td>
+</tr>
+</tbody>
+</table>
 <h2 id="removing-common-time-trends">Removing common time trends<a class="headerlink" href="#removing-common-time-trends" title="Permanent link">&para;</a></h2>
-<p>In large part, the correlation between lagged measurement errors and
+<p>In large part, the correlation between lagged measurement variabales and
 $\Delta \log \Delta C$ is driven by a common decreasing time trend. When
 this decrease occurs shifts with $L$, so that might explain why the
 maximal correlation depends on $L$. Here, we will repeat some of the
@@ -878,90 +942,220 @@ n = length(unique(sdf.state))
                    :log_encounters_rate] : []
   tbl=explorelags(vars, sdf, states_to_plot;
                   toplot=toplot, tdiffs=-10:40, correlation=false)
-  println(&quot;\nL = $L&quot;)
+
+  println(&quot;\n### L = $L \n&quot;)
   println(tbl)
+  println()
 end
 </code></pre>
 
-<p>L = 1 | Variable | ℓ maximum cov | maximum cov | variance | |
-————————————————–:| ————-:| ———–:| ——–:| | retail and recreation
-percent change from baseline | 31.00 | 0.15 | 57.34 | | grocery and
-pharmacy percent change from baseline | 31.00 | 0.23 | 52.65 | |
-parks percent change from baseline | 37.00 | 0.93 | 1266.70 | |
-transit stations percent change from baseline | 24.00 | 0.19 | 196.32
-| | workplaces percent change from baseline | -10.00 | -0.08 |
-36.79 | | residential percent change from baseline | -10.00 | 0.06
-| 8.43 | | percentchangehours | 9.00 | 0.17 | 90.19 | |
-percentchangebusinesses | 22.00 | 0.13 | 62.22 | | n grade total |
--9.00 | -0.01 | 0.32 | | daily distance diff | 18.00 | 0.00 |
-0.01 | | n grade distance | 19.00 | -0.01 | 0.28 | | daily
-visitation diff | 1.00 | 0.00 | 0.00 | | n grade visitation |
-18.00 | -0.01 | 0.92 | | log encounters rate | -9.00 | 0.04 |
-2.52 | | n grade encounters | -9.00 | -0.04 | 1.88 |</p>
-<p>L = 3 | Variable | ℓ maximum cov | maximum cov | variance | |
-————————————————–:| ————-:| ———–:| ——–:| | retail and recreation
-percent change from baseline | 0.00 | 0.08 | 51.55 | | grocery and
-pharmacy percent change from baseline | 40.00 | 0.09 | 46.27 | |
-parks percent change from baseline | 18.00 | 0.38 | 983.44 | |
-transit stations percent change from baseline | 25.00 | 0.11 | 187.14
-| | workplaces percent change from baseline | 0.00 | 0.05 | 34.53
-| | residential percent change from baseline | -10.00 | 0.02 | 7.71
-| | percentchangehours | 0.00 | 0.10 | 83.09 | |
-percentchangebusinesses | 17.00 | 0.08 | 58.55 | | n grade total |
-3.00 | -0.01 | 0.30 | | daily distance diff | 2.00 | 0.00 | 0.01
-| | n grade distance | 26.00 | -0.00 | 0.25 | | daily visitation
-diff | 1.00 | 0.00 | 0.00 | | n grade visitation | 18.00 | -0.01
-| 0.85 | | log encounters rate | 9.00 | 0.02 | 2.53 | | n grade
-encounters | -10.00 | -0.02 | 1.84 |</p>
-<p>L = 7 | Variable | ℓ maximum cov | maximum cov | variance | |
-————————————————–:| ————-:| ———–:| ——–:| | retail and recreation
-percent change from baseline | 5.00 | 0.05 | 44.86 | | grocery and
-pharmacy percent change from baseline | 3.00 | 0.05 | 40.90 | |
-parks percent change from baseline | 15.00 | 0.30 | 751.90 | |
-transit stations percent change from baseline | 4.00 | 0.08 | 173.74
-| | workplaces percent change from baseline | 18.00 | 0.03 | 31.80
-| | residential percent change from baseline | -10.00 | 0.02 | 7.00
-| | percentchangehours | 3.00 | 0.08 | 75.70 | |
-percentchangebusinesses | 4.00 | 0.06 | 54.14 | | n grade total |
-4.00 | -0.01 | 0.28 | | daily distance diff | 5.00 | 0.00 | 0.01
-| | n grade distance | 26.00 | -0.00 | 0.22 | | daily visitation
-diff | -10.00 | -0.00 | 0.00 | | n grade visitation | -10.00 |
-0.00 | 0.75 | | log encounters rate | -3.00 | 0.02 | 2.55 | | n
-grade encounters | -10.00 | -0.02 | 1.79 |</p>
-<p>L = 10 | Variable | ℓ maximum cov | maximum cov | variance | |
-————————————————–:| ————-:| ———–:| ——–:| | retail and recreation
-percent change from baseline | 8.00 | 0.04 | 41.47 | | grocery and
-pharmacy percent change from baseline | 9.00 | 0.05 | 38.83 | |
-parks percent change from baseline | 16.00 | 0.26 | 676.17 | |
-transit stations percent change from baseline | 6.00 | 0.07 | 164.66
-| | workplaces percent change from baseline | 15.00 | 0.03 | 30.17
-| | residential percent change from baseline | -10.00 | 0.02 | 6.58
-| | percentchangehours | 8.00 | 0.08 | 71.48 | |
-percentchangebusinesses | 9.00 | 0.05 | 51.14 | | n grade total |
-4.00 | -0.01 | 0.27 | | daily distance diff | 6.00 | 0.00 | 0.01
-| | n grade distance | 12.00 | -0.00 | 0.21 | | daily visitation
-diff | -10.00 | -0.00 | 0.00 | | n grade visitation | -10.00 |
-0.00 | 0.69 | | log encounters rate | -10.00 | 0.02 | 2.57 | | n
-grade encounters | -10.00 | -0.02 | 1.77 |</p>
-<p>L = 14 | Variable | ℓ maximum cov | maximum cov | variance | |
-————————————————–:| ————-:| ———–:| ——–:| | retail and recreation
-percent change from baseline | 11.00 | 0.03 | 37.86 | | grocery and
-pharmacy percent change from baseline | 11.00 | 0.04 | 36.64 | |
-parks percent change from baseline | 17.00 | 0.22 | 595.81 | |
-transit stations percent change from baseline | 10.00 | 0.05 | 153.38
-| | workplaces percent change from baseline | 14.00 | 0.03 | 28.19
-| | residential percent change from baseline | -10.00 | 0.02 | 6.10
-| | percentchangehours | 11.00 | 0.07 | 66.78 | |
-percentchangebusinesses | 11.00 | 0.04 | 47.53 | | n grade total |
-5.00 | -0.01 | 0.26 | | daily distance diff | 9.00 | 0.00 | 0.01
-| | n grade distance | 15.00 | -0.00 | 0.19 | | daily visitation
-diff | -10.00 | -0.00 | 0.00 | | n grade visitation | -10.00 |
-0.00 | 0.62 | | log encounters rate | -8.00 | 0.02 | 2.60 | | n
-grade encounters | -10.00 | -0.02 | 1.75 |</p>
-<p><img alt="" src="../figures/exploratory_8_1.png" /> <img alt="" src="../figures/exploratory_8_2.png" />
-<img alt="" src="../figures/exploratory_8_3.png" /> <img alt="" src="../figures/exploratory_8_4.png" />
-<img alt="" src="../figures/exploratory_8_5.png" /> <img alt="" src="../figures/exploratory_8_6.png" />
-<img alt="" src="../figures/exploratory_8_7.png" /> <img alt="" src="../figures/exploratory_8_8.png" /></p>
+<h3 id="l-1_1">L = 1<a class="headerlink" href="#l-1_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th align="right">Variable</th>
+<th align="right">ℓ maximum cov</th>
+<th align="right">maximum cov</th>
+<th align="right">variance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">retail and recreation percent change from baseline</td>
+<td align="right">31.00</td>
+<td align="right">0.15</td>
+<td align="right">57.34</td>
+</tr>
+<tr>
+<td align="right">grocery and pharmacy percent change from baseline</td>
+<td align="right">31.00</td>
+<td align="right">0.23</td>
+<td align="right">52.65</td>
+</tr>
+<tr>
+<td align="right">parks percent change from baseline</td>
+<td align="right">37.00</td>
+<td align="right">0.93</td>
+<td align="right">1266.70</td>
+</tr>
+<tr>
+<td align="right">transit stations percent change from baseline</td>
+<td align="right">24.00</td>
+<td align="right">0.19</td>
+<td align="right">196.32</td>
+</tr>
+<tr>
+<td align="right">workplaces percent change from baseline</td>
+<td align="right">-10.00</td>
+<td align="right">-0.08</td>
+<td align="right">36.79</td>
+</tr>
+<tr>
+<td align="right">residential percent change from baseline</td>
+<td align="right">-10.00</td>
+<td align="right">0.06</td>
+<td align="right">8.43</td>
+</tr>
+<tr>
+<td align="right">percentchangehours</td>
+<td align="right">9.00</td>
+<td align="right">0.17</td>
+<td align="right">90.19</td>
+</tr>
+<tr>
+<td align="right">percentchangebusinesses</td>
+<td align="right">22.00</td>
+<td align="right">0.13</td>
+<td align="right">62.22</td>
+</tr>
+<tr>
+<td align="right">n grade total</td>
+<td align="right">-9.00</td>
+<td align="right">-0.01</td>
+<td align="right">0.32</td>
+</tr>
+<tr>
+<td align="right">daily distance diff</td>
+<td align="right">18.00</td>
+<td align="right">0.00</td>
+<td align="right">0.01</td>
+</tr>
+<tr>
+<td align="right">n grade distance</td>
+<td align="right">19.00</td>
+<td align="right">-0.01</td>
+<td align="right">0.28</td>
+</tr>
+<tr>
+<td align="right">daily visitation diff</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr>
+<td align="right">n grade visitation</td>
+<td align="right">18.00</td>
+<td align="right">-0.01</td>
+<td align="right">0.92</td>
+</tr>
+<tr>
+<td align="right">log encounters rate</td>
+<td align="right">-9.00</td>
+<td align="right">0.04</td>
+<td align="right">2.52</td>
+</tr>
+<tr>
+<td align="right">n grade encounters</td>
+<td align="right">-9.00</td>
+<td align="right">-0.04</td>
+<td align="right">1.88</td>
+</tr>
+</tbody>
+</table>
+<h3 id="l-3_1">L = 3<a class="headerlink" href="#l-3_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th align="right">Variable</th>
+<th align="right">ℓ maximum cov</th>
+<th align="right">maximum cov</th>
+<th align="right">variance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">retail and recreation percent change from baseline</td>
+<td align="right">0.00</td>
+<td align="right">0.08</td>
+<td align="right">51.55</td>
+</tr>
+<tr>
+<td align="right">grocery and pharmacy percent change from baseline</td>
+<td align="right">40.00</td>
+<td align="right">0.09</td>
+<td align="right">46.27</td>
+</tr>
+<tr>
+<td align="right">parks percent change from baseline</td>
+<td align="right">18.00</td>
+<td align="right">0.38</td>
+<td align="right">983.44</td>
+</tr>
+<tr>
+<td align="right">transit stations percent change from baseline</td>
+<td align="right">25.00</td>
+<td align="right">0.11</td>
+<td align="right">187.14</td>
+</tr>
+<tr>
+<td align="right">workplaces percent change from baseline</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">34.53</td>
+</tr>
+<tr>
+<td align="right">residential percent change from baseline</td>
+<td align="right">-10.00</td>
+<td align="right">0.02</td>
+<td align="right">7.71</td>
+</tr>
+<tr>
+<td align="right">percentchangehours</td>
+<td align="right">0.00</td>
+<td align="right">0.10</td>
+<td align="right">83.09</td>
+</tr>
+<tr>
+<td align="right">percentchangebusinesses</td>
+<td align="right">17.00</td>
+<td align="right">0.08</td>
+<td align="right">58.55</td>
+</tr>
+<tr>
+<td align="right">n grade total</td>
+<td align="right">3.00</td>
+<td align="right">-0.01</td>
+<td align="right">0.30</td>
+</tr>
+<tr>
+<td align="right">daily distance diff</td>
+<td align="right">2.00</td>
+<td align="right">0.00</td>
+<td align="right">0.01</td>
+</tr>
+<tr>
+<td align="right">n grade distance</td>
+<td align="right">26.00</td>
+<td align="right">-0.00</td>
+<td align="right">0.25</td>
+</tr>
+<tr>
+<td align="right">daily visitation diff</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr>
+<td align="right">n grade visitation</td>
+<td align="right">18.00</td>
+<td align="right">-0.01</td>
+<td align="right">0.85</td>
+</tr>
+<tr>
+<td align="right">log encounters rate</td>
+<td align="right">9.00</td>
+<td align="right">0.02</td>
+<td align="right">2.53</td>
+</tr>
+<tr>
+<td align="right">n grade encounters</td>
+<td align="right">-10.00</td>
+<td align="right">-0.02</td>
+<td align="right">1.84</td>
+</tr>
+</tbody>
+</table>
+<p>Error: UndefVarError: colors not defined</p>
 <p>The figures above are with $L=7$.</p>
 <p>In these tables, we see that removing time fixed effects, the covariance
 between <code>ΔlogΔcases</code> and the measurement variables is greatly reduced.
