@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Paul Schrimpf">
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>With signals - CovidRt.jl</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atelier-dune-light.min.css">
+        <link href="../assets/Documenter.css" rel="stylesheet">
+        <link href="../assets/extra.css" rel="stylesheet">
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">CovidRt.jl</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href=".." class="nav-link">Package Docs</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Reproductive number estimates <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../Rt/" class="dropdown-item">Systrom Approach</a>
+</li>
+                                    
+<li>
+    <a href="../rt_longdiff/" class="dropdown-item">Long-differening</a>
+</li>
+                                    
+<li>
+    <a href="../exploratory/" class="dropdown-item">Exploratory Plots</a>
+</li>
+                                    
+<li>
+    <a href="../rt_onlym/" class="dropdown-item">Without policies</a>
+</li>
+                                    
+<li>
+    <a href="../rt_onlyp/" class="dropdown-item">Only policies</a>
+</li>
+                                    
+<li>
+    <a href="./" class="dropdown-item active">With signals</a>
+</li>
+                                    
+<li>
+    <a href="../extensions/" class="dropdown-item">Extensions</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../license/" class="dropdown-item">License</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../rt_onlyp/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../extensions/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/schrimpf/CovidRt.jl/edit/master/docs/rt_signals.md" class="nav-link"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<p>In this section, we use various measures of social distancing as
+additional signals of $R_{s,t}$.</p>
+<p>As in the previous results, we assume</p>
+<p>
+<script type="math/tex; mode=display">
+\begin{align*}
+\tilde{R}_{s,0} & \sim N(X_{0,s} \alpha_0, \sigma^2_{R,0}) \\
+\tilde{R}_{s,t} & = \rho \tilde{R}_{s,t} + u_{s,t} \;,\; u_{s,t} \sim
+N(0, \sigma^2_R) \\
+R_{s,t} & = X_{s,t} \alpha + \tilde{R}_{s,t} \\
+\Delta \log(\Delta C)_{s,t} & = \gamma (R_{s,t} - 1) + \epsilon_{s,t} \;,\; \epsilon_{s,t} \sim N(0, \sigma^2_k)
+\end{align*}
+</script>
+</p>
+<p>In computing $\Delta \log \Delta C$, we take backward differences of
+length 7, so</p>
+<p>
+<script type="math/tex; mode=display">
+(\Delta \log \Delta C)[t] = \log (C_t - C_{t-7}) - \log(C_{t-7} - C_{t-14})
+</script>
+</p>
+<p>This means that our time $t$ outcome is reflects the average
+reproductive number of reported cases from time $t-7$ to $t$. If it
+takes $L$ days for infections to be reported, then these will reflect
+conditions at time $t-7-L$ to $t-L$. Hence, define, $M_{s,t}$ as the
+moving average from time $t-7-L$ to $t-L$ of a vector of social
+distancing metrics. Similarly, for $X_{s,t}$ we use the moving average
+of the policy indicator variables from time $t-7-L$ to $t-L$. We will
+focus on $L=10$. (I think Hiro’s and Victor’s regressions are using
+social distancing metrics at time $t-14$.)</p>
+<p>The social distancing metrics are added to the model as additional
+signals of $R_{s,t}$ in particular,</p>
+<p>
+<script type="math/tex; mode=display">
+\begin{align*}
+M_{s,t} = & \mu + \Gamma R_{s,t} + V_{s,t} \\
+\end{align*}
+</script> with <script type="math/tex; mode=display">
+(\epsilon_{s,t}, V_{s,t}') \sim N(0, \Sigma)
+</script>
+</p>
+<pre><code class="julia">L = 10
+mvars = [:retail_and_recreation_percent_change_from_baseline,
+         :grocery_and_pharmacy_percent_change_from_baseline,
+         :parks_percent_change_from_baseline ,
+         :transit_stations_percent_change_from_baseline,
+         :workplaces_percent_change_from_baseline,
+         :residential_percent_change_from_baseline,
+         :percentchangehours,
+         :percentchangebusinesses,
+         :daily_distance_diff,
+         :daily_visitation_diff,
+         :log_encounters_rate]
+
+xvars = vcat(x0vars, Symbol(&quot;Stay.at.home..shelter.in.place&quot;))
+J = length(mvars)+1
+priors = (γ = truncated(Normal(1/7,1/7), 1/28, 1/1),
+          σR0 = truncated(Normal(1, 3), 0, Inf),
+          α0 = MvNormal(zeros(length(x0vars)), sqrt(10)), #truncated(Normal(1, 3), 0, Inf),
+          σR = truncated(Normal(0.25,1),0,Inf),
+          ρ = Uniform(rlo, rhi),
+          α = MvNormal(zeros(K), sqrt(10))
+          Σ = Wishart(J+2, diagm(ones(J))*1/(2*0.001))
+          Γ = MvNormal(zeros(length(mvars)), sqrt(10))
+          μ = MvNormal(zeros(length(mvars)), sqrt(10))
+          )
+
+estfile = &quot;rt_signals_$(L)_x$(K).jld2&quot;
+w = vcat(ones(7+1), zeros(1+2*L+7))
+sort!(sdf, (:state, :date))
+for v in pvars
+  newv = Symbol(string(v)*&quot;_lagged&quot;)
+  sdf[!,newv] = Float64.(sdf[!,v])
+  for gdf in groupby(sdf, :state)
+    gdf[:, newv] .= CovidRt.smooth(gdf[:,v], w=w)
+  end
+end
+mdl = CovidRt.RtModel(sdf, Symbol(&quot;cases.nyt&quot;), xvars, x0vars,
+                      priors; L1=7, L2=7,
+                      time0=r-&gt;(r[Symbol(&quot;cases.nyt&quot;)].&gt;=5))
+
+if !isfile(estfile) || reestimate
+  post = CovidRt.mcmc(mdl; iterations=2000, warmup=warmup)
+  @save estfile post
+end
+@load estfile post
+cc = CovidRt.MCMCChain(post, xvars, x0vars)
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Paul Schrimpf</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML" defer></script>
+        <script src="../assets/mathjaxhelper.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form>
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
